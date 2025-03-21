@@ -8,6 +8,10 @@ class MyDB:
     def __init__(self, directory=Path(".cache")):
         self.directory = directory
 
+        if self.directory.exists() is False:
+            logger.info(f"Create cache directory {self.directory}")
+            self.directory.mkdir()
+
         self.path_private_profiles = self.directory / "private_profiles.json"
         self.path_companies = self.directory / "companies_todo.json"
 

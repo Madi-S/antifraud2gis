@@ -25,10 +25,12 @@ def get_args():
     aa.alias(["company", "compare"], "cmp")
     aa.alias(["company", "fraud"], "f", "fr")
     aa.alias(["company", "reviews"], "rev")
+    aa.alias(["company", "info"], "i")
 
     aa.alias(["user"], "u", "users")
     aa.alias(["user", "company"], "c", "ci")
     aa.alias(["user", "reviews"], "rev")
+    aa.alias(["user", "info"], "i")
     aa.skip_flags()
     aa.parse()
 
