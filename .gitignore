@@ -1,0 +1,6 @@
+__pycache__
+*.log
+*.gz
+.env
+.storage
+*.egg-info/
