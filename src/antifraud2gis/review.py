@@ -46,11 +46,20 @@ class Review():
 
     def __repr__(self):
         # print_json(data=self._data)
+        from .user import User
 
         photo_str = f"{self.nphotos}p" if self.nphotos else ""
+        text_str = len(self.text) if self.text else ""
+
+        if self.uid is None:
+            user_str = "NO USER"
+        else:
+            u = User(self.uid)
+            user_str = f"{u.name}(rev:{u.nreviews()})"
+
         if self.title:
             title = f"{self.title} ({self.address})"
         else:
             title = "<NO TITLE>"
 
-        return f'Review( {self.uid} {self.user_name} ({self.rating} {photo_str}) > {self.oid} {title})'
+        return f'Review( {self.uid} {user_str} (rating:{self.rating} {photo_str}) > {self.oid} {title})'

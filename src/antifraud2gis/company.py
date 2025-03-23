@@ -1,6 +1,8 @@
 import json
 from loguru import logger
 import time
+import sys
+import traceback
 
 from .settings import settings
 from .const import DATAFORMAT_VERSION, SLEEPTIME, WSS_THRESHOLD, LOAD_NREVIEWS, REVIEWS_KEY
@@ -8,7 +10,14 @@ from .user import User
 from .review import Review
 from .session import session
 
+# to avoid circular import
+class RelationDict:
+    pass
+
 class Company:
+
+    relations: RelationDict
+
     def __init__(self, object_id):
         assert object_id is not None
         assert object_id.isdigit()
@@ -26,28 +35,36 @@ class Company:
 
         self.error = None
 
+        self.tags = None
+
 
         # ratings
         self.score = dict()
         self.score['NR'] = None
         self.score['TwinScore'] = None
+        self.score['WSS'] = None
 
         self.frozen = False
 
         self.load_basic()
+        self.relations = None
 
     def load_basic(self):
         if not self.load_basic_from_disk():            
             self.load_basic_from_network()
             self.save_basic()
         
+    def set_tag(self, tag):
+        self.tags = tag
+        self.save_basic()
+
     def load_basic_from_disk(self):
         if self.basic_path.exists():
             with open(self.basic_path) as f:
                 _basic = json.load(f)
                 version = int(_basic.get('version', 0))
                 if version != DATAFORMAT_VERSION:
-                    # print(f"version mismatch {version} != {dataformat_version}")
+                    logger.debug(f"version mismatch {version} != {DATAFORMAT_VERSION} for {self.object_id}")
                     return False
 
                 self.title = _basic['title']
@@ -58,8 +75,12 @@ class Company:
                 self.score = _basic.get('score', dict())
                 self.error = _basic.get('error', None)
                 self.frozen = _basic.get('frozen', False)
+                self.tags = _basic.get('tags', None)
+                if not self.title:
+                    logger.debug(f"no title for {self.object_id}")
                 return bool(self.title)
         else:
+            logger.debug(f"no file on disk for {self.object_id}")
             return False
 
 
@@ -75,6 +96,8 @@ class Company:
                 'error': self.error,
                 'frozen': self.frozen
             }
+            if self.tags:
+                basic['tags'] = self.tags
             json.dump(basic, f)
 
 
@@ -149,7 +172,12 @@ class Company:
             page+=1
         
 
-        print(f"loaded {len(self._reviews)} reviews")        
+        logger.info(f"Company {self.object_id}: loaded {len(self._reviews)} reviews")
+        # why we were called?
+        # print("----------")
+        # print("".join(traceback.format_stack(limit=10)))         
+
+
         with open(self.reviews_path, 'w') as f:
             json.dump(self._reviews, f)
 
@@ -175,7 +203,7 @@ class Company:
 
         if self.score.get('WSS') is None:
             risktag = "?"
-        elif self.score['WSS'] > WSS_THRESHOLD:
+        elif self.score['WSS'] > 100+WSS_THRESHOLD:
             risktag = "!"
         else:
             risktag = " "
@@ -192,6 +220,21 @@ class Company:
 
         return f'Company({self.object_id} {risktag} {titlestr} ({"RISK" if self.risk() else "OK"}: {nrscore} {twinscore} {wss}) addr: {self.address} reviews:{len(self._reviews) if self._reviews else "not loaded"}{tags})'
 
+    def get_title(self):
+        return self.title or self.object_id
+
+    def export(self):
+        self.load_reviews()
+        data = {
+            'oid': self.object_id,
+            'title': self.title,
+            'alias': self.alias,
+            'address': self.address,
+            'score': self.score,
+            'nreviews': self.nreviews(),            
+        }
+        return data
+
     def reviews(self):
         for r in self._reviews:
             yield Review(r)
@@ -201,6 +244,10 @@ class Company:
 
 
     def load_basic_from_network(self):
+
+        # print("load_basic", self.object_id)
+        # print(self.title, self.address, "err:",self.error)
+
         self.load_reviews()
         for idx, r in enumerate(self._reviews):
             upid = r['user']['public_id']
@@ -214,8 +261,10 @@ class Company:
             user.load()
             ci = user.get_company_info(self.object_id)
             if ci is None:
+                print(f"no company info for me {self.object_id}, process next user")
                 continue
 
+            print(f"found company info for me {self.object_id} in user {user}")
             self.title = ci['name']
             self.address = ci['address']
             return
@@ -223,8 +272,10 @@ class Company:
     def delete(self):
         # delete all files about company
         if self.reviews_path.exists():
+            print("delete", self.reviews_path)
             self.reviews_path.unlink()
         if self.basic_path.exists():
+            print("delete", self.basic_path)
             self.basic_path.unlink()
 
 class CompanyList():
@@ -264,3 +315,4 @@ class CompanyList():
             return str(Company(oid))
         else:
             return oid
+    

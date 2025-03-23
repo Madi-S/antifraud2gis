@@ -6,6 +6,8 @@ import time
 import functools
 from rich.pretty import Pretty
 from rich import print_json
+import traceback
+import sys
 
 from .db import db
 from .const import WSS_THRESHOLD, LOAD_NREVIEWS, SLEEPTIME
@@ -72,6 +74,10 @@ class User:
             return
 
         print(f"  # load (network) reviews for user {self.public_id}")
+
+        # why we were called?
+        # print("".join(traceback.format_stack(limit=10))) 
+
         url = f'https://api.auth.2gis.com/public-profile/1.1/user/{self.public_id}/content/feed?page_size=20'        
 
         page = 0
