@@ -193,7 +193,7 @@ class RelationDict:
         table.add_column("Median")
         table.add_column("Rating")
 
-        for rel in self.relations.values():
+        for rel in sorted(self.relations.values(), key=lambda x: x.count, reverse=True):
             rel.calc()
             # hide if not dangerous and low count
             if not rel.is_dangerous() and rel.count < settings.show_hit_th:
