@@ -215,7 +215,10 @@ class RelationDict:
             else:
                 median_cell = Text(str(rel.median), style='green')
 
-            rating_cell = Text(f"{rel.avg_arating:.1f} {rel.avg_brating:.1f}")
+            if rel.avg_arating >= settings.risk_highrate_th and rel.avg_brating >= settings.risk_highrate_th:
+                rating_cell = Text(f"{rel.avg_arating:.1f} {rel.avg_brating:.1f}", style='red')
+            else:
+                rating_cell = Text(f"{rel.avg_arating:.1f} {rel.avg_brating:.1f}")
 
             table.add_row(tags_cell, _c.get_title(), _c.get_town(), _c.alias or Text(_c.object_id, style='grey30'), hits_cell,
                           # f"{rel.mean:.1f}", 

@@ -123,10 +123,13 @@ def detect(c: Company, cl: CompanyList):
     skipped_users = 0
     processed_reviews = 0
 
+    skipped_users_ratings = list()
+
     for cr in c.reviews():
         if cr.uid is None:
             # print("!! Skip review without user", cr)
             skipped_users += 1
+            skipped_users_ratings.append(cr.rating)
             continue
         u = cr.user
 
@@ -140,6 +143,7 @@ def detect(c: Company, cl: CompanyList):
             
             if u.nreviews() > MAX_USER_REVIEWS:
                 skipped_users += 1
+                skipped_users_ratings.append(cr.rating)
                 # logger.info(f"Skip user {u} with {u.nreviews()} reviews")
                 continue
             # only for open profiles
@@ -239,6 +243,7 @@ def detect(c: Company, cl: CompanyList):
     c.score['NDangerous'] = c.relations.ndangerous
     c.score['total_users'] = processed_users + skipped_users 
     c.score['empty_user_ratio'] = int(100 * skipped_users / (processed_users + skipped_users))
+    c.score['empty_user_avg_rate'] = round(float(np.mean(skipped_users_ratings)), 2)
     c.score['date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     c.score['param_fp'] = settings.param_fp()
     # c.score['full_rate'] = c.count_rate()
@@ -247,7 +252,7 @@ def detect(c: Company, cl: CompanyList):
     # make verdict
     if c.score['empty_user_ratio'] > settings.risk_empty_user_ratio:
         c.score['trusted'] = False
-        c.score['reason'] = f"empty_user_ratio {c.score['empty_user_ratio']}"
+        c.score['reason'] = f"empty_user_ratio {c.score['empty_user_ratio']} ({c.score['empty_user_avg_rate']})"
     elif c.relations.nrisk_users > settings.risk_user_ratio:
         c.score['trusted'] = False
         c.score['reason'] = f"risk_users {c.relations.nrisk_users}"
