@@ -3,7 +3,9 @@ import json
 import os
 from rich import print_json
 import time
+import datetime
 import numpy as np
+
 
 from .db import db
 from .const import WSCORE_THRESHOLD, WSCORE_HITS_THRESHOLD, MAX_USER_REVIEWS
@@ -11,7 +13,7 @@ from .logger import logger
 from .company import Company, CompanyList
 from .user import User
 from .relation import RelationDict
-
+from .settings import settings
 
 def compare(a: Company, b: Company):
 
@@ -31,6 +33,8 @@ def compare(a: Company, b: Company):
     aset = set()
     bset = set()
 
+    aratings = list()
+    bratings = list()
 
     """ fill sets for a/b based on company reviews BUT often user is not found there (because not in first 500 reviews or other reason) """
     for r in a.reviews():
@@ -73,12 +77,22 @@ def compare(a: Company, b: Company):
     for uid in ab:
         u = User(uid)
         reviews_for_user.append(u.nreviews())
-        print(u)
+        ar = u.review_for(a.object_id)
+        br = u.review_for(b.object_id)
+
+        aratings.append(ar.rating)
+        bratings.append(br.rating)
+
+        print(f"{u} a:{ar.rating} b:{br.rating}")
 
             
+    aavg = round(float(np.mean(aratings)), 2)
+    bavg = round(float(np.mean(bratings)), 2)
+
     print(f"common: {len(ab)} users")
-    print(f"reviews: {reviews_for_user}")
-    print(f"mean: {np.mean(reviews_for_user)} median: {np.median(reviews_for_user)}")
+    # print(f"reviews: {reviews_for_user}")
+    print(f"mean num reviews: {round(float(np.mean(reviews_for_user)), 2)} median: {round(float(np.median(reviews_for_user)),3)}")
+    print(f"avg rating {a.get_title()}: {aavg} avg raging {b.get_title( )}: {bavg}")
 
 
 
@@ -97,6 +111,7 @@ def detect(c: Company, cl: CompanyList):
         print(c)
         print(c.error)
         return
+
     c.load_reviews()
     c.load_users()
     logger.info(f"Run fraud detect for {c.title} ({c.address}) {c.object_id} {c.nreviews()} reviews")
@@ -105,10 +120,13 @@ def detect(c: Company, cl: CompanyList):
     c_weight = defaultdict(int)
 
     processed_users = 0
+    skipped_users = 0
     processed_reviews = 0
 
     for cr in c.reviews():
         if cr.uid is None:
+            # print("!! Skip review without user", cr)
+            skipped_users += 1
             continue
         u = cr.user
 
@@ -116,8 +134,12 @@ def detect(c: Company, cl: CompanyList):
             print(f"!! DEBUG: {u}")
 
         if u.nreviews():
+            if u.public_id in debug_uids:
+                print(f"!! DEBUG: {u}")
+
             
             if u.nreviews() > MAX_USER_REVIEWS:
+                skipped_users += 1
                 # logger.info(f"Skip user {u} with {u.nreviews()} reviews")
                 continue
             # only for open profiles
@@ -133,7 +155,7 @@ def detect(c: Company, cl: CompanyList):
 
                 rel = c.relations[r.oid]
                 rel.inc()
-                rel.add_user(u)
+                rel.add_user(u, cr.rating, r.rating)
 
                 c_hits[r.oid] += 1
                 c_weight[r.oid] += 1/u.nreviews()
@@ -192,13 +214,45 @@ def detect(c: Company, cl: CompanyList):
     # print(f"HITS (rev:{c.nreviews()} / neigh:{n_neighbours})")
     
 
+    
+
     c.relations.calc()
+
+    trusted_ratings = list()
+    tr_c = 0
+    untr_c = 0
+    for cr in c.reviews():
+        if cr.uid is not None and cr.uid not in c.relations.dangerous_users:
+            trusted_ratings.append(cr.rating)
+            tr_c +=1 
+        else:
+            untr_c +=1
+
+    # print(f"{tr_c=}, {untr_c=}")
+
+    c.score = dict()
 
     c.score['NR'] = round(neigh_review_ratio,3)
     c.score['TwinScore'] = round(twin_score/n_neighbours,3)
     c.score['WSS'] = round(wscore_sum,3)
     c.score['DoubleMedian'] = int(c.relations.doublemedian)
     c.score['NDangerous'] = c.relations.ndangerous
+    c.score['total_users'] = processed_users + skipped_users 
+    c.score['empty_user_ratio'] = int(100 * skipped_users / (processed_users + skipped_users))
+    c.score['date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    c.score['param_fp'] = settings.param_fp()
+    # c.score['full_rate'] = c.count_rate()
+    # c.score['trusted_rate'] = round(float(np.mean(trusted_ratings)),2)
+
+    # make verdict
+    if c.score['empty_user_ratio'] > settings.risk_empty_user_ratio:
+        c.score['trusted'] = False
+        c.score['reason'] = f"empty_user_ratio {c.score['empty_user_ratio']}"
+    elif c.relations.nrisk_users > settings.risk_user_ratio:
+        c.score['trusted'] = False
+        c.score['reason'] = f"risk_users {c.relations.nrisk_users}"
+    else:
+        c.score['trusted'] = True
 
     logger.info(f"SCORE: {c.score} for {c.object_id}")
 

@@ -68,6 +68,11 @@ class User:
         for r in self._reviews:
             yield Review(r)
 
+    def review_for(self, oid: str) -> Review:
+        for r in self.reviews():
+            if r.oid == oid:
+                return r
+
     def load_from_network(self):
         if db.is_private_profile(self.public_id):
             logger.debug("skip: private profile from shelf", self.public_id)

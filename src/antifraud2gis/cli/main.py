@@ -12,7 +12,6 @@ from rich.console import Console
 from rich.table import Table
 
 from pathlib import Path
-from dotenv import load_dotenv
 
 from ..company import Company, CompanyList
 from ..user import User
@@ -44,7 +43,8 @@ def get_args():
     aa.alias(["user", "info"], "i")
 
     aa.alias(["summary"], "sum", "s")
-    aa.alias(["summary", "summary"], "sum", "s")
+    aa.alias(["summary", "summary"], "sum")
+    aa.alias(["summary", "search"], "se", "s")
     aa.alias(["summary", "table", "TwinScore"], "twin", "ts")
     aa.alias(["summary", "table", "WSS"], "wss")
 
@@ -81,8 +81,6 @@ def main():
 
     stopfile = Path('.stop')
 
-    load_dotenv()
-
     loginit("DEBUG" if args.verbose else "INFO")
 
     if args.subparser is None:
@@ -98,5 +96,5 @@ def main():
     elif args.subparser == "user":
         handle_user(args)
 
-    elif args.subparser == "util":
+    elif args.subparser == "dev":
         handle_dev(args)

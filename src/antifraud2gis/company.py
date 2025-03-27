@@ -3,6 +3,7 @@ from loguru import logger
 import time
 import sys
 import traceback
+import numpy as np
 
 from .settings import settings
 from .const import DATAFORMAT_VERSION, SLEEPTIME, WSS_THRESHOLD, LOAD_NREVIEWS, REVIEWS_KEY
@@ -36,6 +37,8 @@ class Company:
         self.error = None
 
         self.tags = None
+
+        self.rate = None
 
 
         # ratings
@@ -109,11 +112,20 @@ class Company:
             with open(self.reviews_path) as f:
                 # print(f"Load company reviews from {self.reviews_path} mtime: {int(self.reviews_path.stat().st_mtime)} sz: {self.reviews_path.stat().st_size}")
                 self._reviews = json.load(f)
+                self.count_rate()
         else:
             if not local_only:
                 self.load_reviews_from_network()
         return len(self._reviews)
 
+    def count_rate(self):
+        self.ratings = list()
+        for r in self._reviews:
+            self.ratings.append(r['rating'])
+
+        if self.ratings:        
+            self.rate = round(float(np.mean(self.ratings)), 2)
+        return(self.rate)
 
     def users(self):
         for r in self._reviews:
@@ -177,6 +189,7 @@ class Company:
         # print("----------")
         # print("".join(traceback.format_stack(limit=10)))         
 
+        self.count_rate()
 
         with open(self.reviews_path, 'w') as f:
             json.dump(self._reviews, f)
@@ -218,10 +231,15 @@ class Company:
         if self.frozen:
             tags += "[FROZEN]"
 
-        return f'Company({self.object_id} {risktag} {titlestr} ({"RISK" if self.risk() else "OK"}: {nrscore} {twinscore} {wss}) addr: {self.address} reviews:{len(self._reviews) if self._reviews else "not loaded"}{tags})'
+        return f'Company({self.object_id} rate:{self.rate} {risktag} {titlestr} ({"RISK" if self.risk() else "OK"}: {nrscore} {twinscore} {wss}) addr: {self.address} reviews:{len(self._reviews) if self._reviews else "not loaded"}{tags})'
 
     def get_title(self):
         return self.title or self.object_id
+
+    def get_town(self):
+        if self.address is None:
+            return None
+        return self.address.split(',')[0]
 
     def export(self):
         self.load_reviews()
@@ -261,10 +279,10 @@ class Company:
             user.load()
             ci = user.get_company_info(self.object_id)
             if ci is None:
-                print(f"no company info for me {self.object_id}, process next user")
+                # print(f"no company info for me {self.object_id}, process next user")
                 continue
 
-            print(f"found company info for me {self.object_id} in user {user}")
+            # print(f"found company info for me {self.object_id} in user {user}")
             self.title = ci['name']
             self.address = ci['address']
             return
@@ -272,10 +290,8 @@ class Company:
     def delete(self):
         # delete all files about company
         if self.reviews_path.exists():
-            print("delete", self.reviews_path)
             self.reviews_path.unlink()
         if self.basic_path.exists():
-            print("delete", self.basic_path)
             self.basic_path.unlink()
 
 class CompanyList():

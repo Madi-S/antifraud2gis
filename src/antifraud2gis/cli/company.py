@@ -3,6 +3,8 @@ import builtins
 import json
 import time
 import sys
+from rich import print as pprint, print_json
+from rich.text import Text
 
 from ..company import Company, CompanyList
 from ..fraud import detect, compare
@@ -51,6 +53,11 @@ def handle_company(args: argparse.Namespace):
 
         detect(company, cl)
         company.relations.dump_table()
+        if company.score['trusted']:
+            pprint(Text("Company is trusted", style='green'))
+        else:
+            pprint(Text("Company is NOT trusted:", style='red'), f"({company.score['reason']})")
+        print_json(data=company.score)
 
     elif cmd == "delete":
         company.delete()
