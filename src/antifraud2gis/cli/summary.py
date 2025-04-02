@@ -3,6 +3,7 @@ import argparse
 from rich.console import Console
 from rich.table import Table
 import time
+import sys
 import re
 from pathlib import Path
 
@@ -115,8 +116,11 @@ def handle_summary(args: argparse.Namespace):
 
     elif cmd == "search":
         cl = CompanyList()
+        if not args.args:
+            print("need regex to search")
+            sys.exit(1)
         regex = args.args[0]
-        for c in cl.companies():
-            if re.match(regex, c.get_title(), re.IGNORECASE):
+        for c in cl.companies():            
+            if c.title and re.match(regex, c.title, re.IGNORECASE):
                 print(c)
             
