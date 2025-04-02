@@ -1,7 +1,10 @@
 import argparse
 import time
+import random
+
 from ..company import CompanyList, Company
 from ..user import User
+from ..settings import settings
 
 from rich.text import Text
 
@@ -13,12 +16,16 @@ def countdown(n=5):
 
 
 def add_dev_parser(subparsers):
-    util_parser = subparsers.add_parser("dev", help="debug utilities for developer")
-    util_parser.add_argument("cmd", choices=['delerror', 'reinit'])
-    util_parser.add_argument("--real", default=False, action='store_true', help='Run dangerous operation for real (otherwise - dry run)')
-    util_parser.add_argument("--now", default=False, action='store_true', help='No countdown, run immediately')
+    dev_parser = subparsers.add_parser("dev", help="debug utilities for developer")
+    dev_parser.add_argument("cmd", choices=['delerror', 'reinit', 'findnew'])
+    dev_parser.add_argument("--real", default=False, action='store_true', help='Run dangerous operation for real (otherwise - dry run)')
+    dev_parser.add_argument("--now", default=False, action='store_true', help='No countdown, run immediately')
+    dev_parser.add_argument("args", nargs=argparse.REMAINDER)
 
-    return util_parser
+    return dev_parser
+
+
+
 
 
 def reinit(cl: CompanyList):
@@ -36,6 +43,13 @@ def reinit(cl: CompanyList):
             'alias': 'gcarenda',
             'tags': 'x'
         },
+
+        '70000001020949692': {
+            'alias': 'mario',
+            'tags': 'x'
+        },
+
+
 
         '141265769369926': {
             'alias': 'nskg',
@@ -119,6 +133,14 @@ def reinit(cl: CompanyList):
         c.save_basic()
 
 
+def findnew():
+    # read random user
+    files = [f for f in settings.user_storage.iterdir() if f.is_file()]
+    uid = random.choice(files).name.split('-')[0]
+    u = User(uid)
+    for r in u.reviews():
+        print(r)
+
 
 def handle_dev(args: argparse.Namespace):
     cmd = args.cmd
@@ -143,7 +165,7 @@ def handle_dev(args: argparse.Namespace):
                 errors += 1
         print(f"Total/Err: {total} / {errors} ")
 
-    if cmd =="reinit":
+    elif cmd == "reinit":
         if args.real:
             print("Running in REAL mode")
             if not args.now:
@@ -152,3 +174,5 @@ def handle_dev(args: argparse.Namespace):
         else:
             print("Running in dry run mode")
 
+    elif cmd == "findnew":
+        findnew()

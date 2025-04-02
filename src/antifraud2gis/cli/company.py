@@ -7,14 +7,16 @@ from rich import print as pprint, print_json
 from rich.text import Text
 
 from ..company import Company, CompanyList
-from ..fraud import detect, compare
+from ..fraud import detect, compare, dump_report
+from ..tasks import fraud_task
+from ..exceptions import AFReportNotReady, AFNoCompany
 
 def add_company_parser(subparsers):
     company_parser = subparsers.add_parser("company", help="info/operations about company")
 
-    company_parser.add_argument("cmd", choices=["list", "info", "export", "settag", "fraud", "compare", "delete", "fraudfirst", "sum", 
+    company_parser.add_argument("cmd", choices=["wipe", "submit","list", "info", "export", "settag", "fraud", "compare", "delete", "fraudfirst", "sum", 
                                                 "summary", "setalias", "freeze", "unfreeze", "users", "reviews", "erasescore", "fixscore",
-                                                "reload"])
+                                                "reload", "report"])
     company_parser.add_argument("object_id", nargs='?', default=None)
     company_parser.add_argument("args", nargs=argparse.REMAINDER)
 
@@ -47,17 +49,39 @@ def handle_company(args: argparse.Namespace):
                 sys.exit(1)
         print(company)
 
+    elif cmd == "submit":
+        fraud_task.send(args.object_id)
+
+    elif cmd == "wipe":
+        print("wipe", args.object_id)
+        Company.wipe(args.object_id)
+
     elif cmd == "fraud":
         if company is None:
             company = Company(args.object_id)
 
-        detect(company, cl)
-        company.relations.dump_table()
-        if company.score['trusted']:
-            pprint(Text("Company is trusted", style='green'))
-        else:
-            pprint(Text("Company is NOT trusted:", style='red'), f"({company.score['reason']})")
-        print_json(data=company.score)
+        detect(company, cl, force=True)
+        dump_report(company.object_id)
+        #company.relations.dump_table()
+        #if company.score['trusted']:
+        #    pprint(Text("Company is trusted", style='green'))
+        #else:
+        #    pprint(Text("Company is NOT trusted:", style='red'), f"({company.score['reason']})")
+        # print_json(data=company.score)
+        # dump_report(company.object_id)
+
+    elif cmd == "report":
+        if company is None:
+            try:
+                company = Company(args.object_id)
+            except AFNoCompany:
+                print("company not found (or no reviews)")
+                sys.exit(1)
+        try:                
+            dump_report(company.object_id)
+        except AFReportNotReady:
+            print("report not ready")
+            sys.exit(1)
 
     elif cmd == "delete":
         company.delete()

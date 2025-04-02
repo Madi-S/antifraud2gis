@@ -2,9 +2,13 @@ from collections import defaultdict
 import json
 import os
 from rich import print_json
+from rich.console import Console
+from rich.table import Table
+from rich.text import Text
 import time
 import datetime
 import numpy as np
+import gzip
 
 
 from .db import db
@@ -12,8 +16,9 @@ from .const import WSCORE_THRESHOLD, WSCORE_HITS_THRESHOLD, MAX_USER_REVIEWS
 from .logger import logger
 from .company import Company, CompanyList
 from .user import User
-from .relation import RelationDict
+from .relation import RelationDict, _is_dangerous
 from .settings import settings
+from .exceptions import AFReportNotReady
 
 def compare(a: Company, b: Company):
 
@@ -90,17 +95,21 @@ def compare(a: Company, b: Company):
     bavg = round(float(np.mean(bratings)), 2)
 
     print(f"common: {len(ab)} users")
-    # print(f"reviews: {reviews_for_user}")
+    print(f"reviews: {len(reviews_for_user)}")
     print(f"mean num reviews: {round(float(np.mean(reviews_for_user)), 2)} median: {round(float(np.median(reviews_for_user)),3)}")
     print(f"avg rating {a.get_title()}: {aavg} avg raging {b.get_title( )}: {bavg}")
 
 
 
 
-def detect(c: Company, cl: CompanyList):
+def detect(c: Company, cl: CompanyList, force=False):
 
     debug_oids = os.getenv("DEBUG_OIDS", "").split(" ")
     debug_uids = os.getenv("DEBUG_UIDS", "").split(" ")
+
+    if c.report_path.exists() and not force:
+        print(f"SKIP because exists {c.report_path}")
+        return
 
     c.relations = RelationDict(c)
 
@@ -125,13 +134,23 @@ def detect(c: Company, cl: CompanyList):
 
     skipped_users_ratings = list()
 
+    # We should have our own numbers/per reviews list to catch users with 1 review. Relations will not catch it.
+    nrlist = list()
+
     for cr in c.reviews():
+        if cr.age > settings.max_review_age:
+            # too old review, safely skip it
+            # print("Skip review", cr)
+            continue
+
         if cr.uid is None:
             # print("!! Skip review without user", cr)
             skipped_users += 1
             skipped_users_ratings.append(cr.rating)
             continue
         u = cr.user
+
+        nrlist.append(u.nreviews())
 
         if u.public_id in debug_uids:
             print(f"!! DEBUG: {u}")
@@ -144,8 +163,9 @@ def detect(c: Company, cl: CompanyList):
             if u.nreviews() > MAX_USER_REVIEWS:
                 skipped_users += 1
                 skipped_users_ratings.append(cr.rating)
-                # logger.info(f"Skip user {u} with {u.nreviews()} reviews")
+                # print(f"Skip user {u} with {u.nreviews()} reviews")
                 continue
+
             # only for open profiles
             for r in u.reviews():
 
@@ -171,27 +191,14 @@ def detect(c: Company, cl: CompanyList):
 
             processed_users += 1
 
-    #if not c.object_id in c_hits:
-    #    print_json(data=c_hits)
-    #    c.error = "unusual"
-    #    c.save_basic()
-    #    return
 
-    if c.object_id in c_hits:
-        print("QQQQ")
-        del c_hits[c.object_id]
-    if c.object_id in c_weight:
-        print("QQQQQQQQQ")
-        del c_weight[c.object_id]
+    if False:
+        if c.object_id in c_hits:
+            del c_hits[c.object_id]
+        if c.object_id in c_weight:
+            del c_weight[c.object_id]
 
-    # special_oid = "141265769338187" # zoo
-    special_oid = "141265769369691" # rshb
-
-
-    #print(c_weight[special_oid])
-    #print("divide by ", c_hits[special_oid])
     c_weight = {k: v/c_hits[k] for k, v in c_weight.items()}
-    #print(c_weight[special_oid])
 
     wscore_sum = 0
     for _oid, score in c_weight.items():
@@ -234,77 +241,108 @@ def detect(c: Company, cl: CompanyList):
 
     # print(f"{tr_c=}, {untr_c=}")
 
-    c.score = dict()
 
-    c.score['NR'] = round(neigh_review_ratio,3)
-    c.score['TwinScore'] = round(twin_score/n_neighbours,3)
-    c.score['WSS'] = round(wscore_sum,3)
-    c.score['DoubleMedian'] = int(c.relations.doublemedian)
-    c.score['NDangerous'] = c.relations.ndangerous
-    c.score['total_users'] = processed_users + skipped_users 
-    c.score['empty_user_ratio'] = int(100 * skipped_users / (processed_users + skipped_users))
-    c.score['empty_user_avg_rate'] = round(float(np.mean(skipped_users_ratings)), 2)
-    c.score['date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    c.score['param_fp'] = settings.param_fp()
+    low_nrlist = list(filter(lambda x: x <= settings.risk_median_rpu, nrlist))
+
+    score = dict()
+
+    score['NR'] = round(neigh_review_ratio,3)
+    score['TwinScore'] = round(twin_score/n_neighbours,3)
+    score['WSS'] = round(wscore_sum,3)
+    score['DoubleMedian'] = int(c.relations.doublemedian)
+    score['NDangerous'] = c.relations.ndangerous
+    score['total_users'] = processed_users + skipped_users 
+    score['empty_user_ratio'] = int(100 * skipped_users / (processed_users + skipped_users))        
+    score['date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    score['param_fp'] = settings.param_fp()
+    score['median_reviews_per_user'] = round(float(np.median(nrlist)), 1)
+
+    if skipped_users_ratings:
+        score['empty_user_avg_rate'] = round(float(np.mean(skipped_users_ratings)), 2)
+    else:
+        score['empty_user_avg_rate'] = None
+
+
     # c.score['full_rate'] = c.count_rate()
     # c.score['trusted_rate'] = round(float(np.mean(trusted_ratings)),2)
 
     # make verdict
-    if c.score['empty_user_ratio'] > settings.risk_empty_user_ratio:
-        c.score['trusted'] = False
-        c.score['reason'] = f"empty_user_ratio {c.score['empty_user_ratio']} ({c.score['empty_user_avg_rate']})"
+    if score['empty_user_ratio'] > settings.risk_empty_user_ratio:
+        score['trusted'] = False
+        score['reason'] = f"empty_user_ratio {score['empty_user_ratio']}% ({skipped_users}/{processed_users + skipped_users}) ({score['empty_user_avg_rate']})"
     elif c.relations.nrisk_users > settings.risk_user_ratio:
-        c.score['trusted'] = False
-        c.score['reason'] = f"risk_users {c.relations.nrisk_users}"
+        score['trusted'] = False
+        score['reason'] = f"risk_users {c.relations.nrisk_users}"
+    elif score['median_reviews_per_user'] <= settings.risk_median_rpu:
+        score['trusted'] = False
+        score['reason'] = f"median_reviews_per_user {score['median_reviews_per_user']} <= {settings.risk_median_rpu} ({len(low_nrlist)} of {len(nrlist)} are <= {settings.risk_median_rpu})"
     else:
-        c.score['trusted'] = True
+        score['trusted'] = True
 
-    logger.info(f"SCORE: {c.score} for {c.object_id}")
+    # logger.info(f"SCORE: {score} for {c.object_id}")
+
+
+    report = dict()
+    report['score'] = score
+    report['relations'] = c.relations.export()
+
+    with gzip.open(c.report_path, "wt") as fh:
+        json.dump(report, fh)
 
     c.save_basic()
 
-    #print(f"{neigh_review_ratio=:.3f}")
-    #print(f"{twin_score=} / {n_neighbours} = {twin_score/n_neighbours:.3f}")
-    #print(f"{wscore_sum=:.3f}")
 
 
-    # remove from c_hits all values 1
-    # c_hits = {k: v for k, v in c_hits.items() if v > 1}
+def dump_report(object_id: str):
 
-    # print c_hits keys ordered by value
+    c = Company(object_id)
 
-    return
+    try:
+        print("read report from", c.report_path)
+        with gzip.open(c.report_path, "rt") as fh:
+            report = json.load(fh)
+    except FileNotFoundError:
+        raise AFReportNotReady(f"Report not ready for {object_id}")
 
-    c_hits_list = sorted(c_hits.items(), key=lambda x: x[1], reverse=True)
-    print("")
-    print("HITS:")
-    for k,v in c_hits_list:
-        if v<=10:
-            break
-        #_c = Company(k)
-        #_c.load_reviews()
-        # company_desc = cl.getdesc(k)
-        _c = Company(k)
-        print(f"{_c} hits: {v}")
-        print("    ", c.relations[k])
-    
+    console = Console()
+    table = Table(show_header=True, header_style="bold magenta", title=f"{c.get_title()} ({c.address}) {c.object_id}")
+    table.add_column("T", style='red')
+    table.add_column("Company name")
+    table.add_column("Town")
+    table.add_column("ID/Alias")
+    table.add_column("Hits")
+    #table.add_column("Mean")
+    table.add_column("Median")
+    table.add_column("Rating")
+
+    for rel in report['relations']:
+        _c = Company(rel['oid'])
+
+        if _is_dangerous(avg_arating=rel['arating'], avg_brating=rel['brating'], count=rel['hits'], median=rel['median']):
+            tags_cell = Text(f"{rel['tags'] or ''}*")
+        else:
+            tags_cell = rel['tags']
+
+        if rel['hits'] > settings.risk_hit_th:
+            hits_cell = Text(f"{rel['hits']}", style='red')
+        else:
+            hits_cell = Text(str(rel['hits']), style="green")
+
+        if rel['median'] < settings.risk_median_th:
+            median_cell = Text(str(rel['median']), style='red')
+        else:
+            median_cell = Text(str(rel['median']), style='green')
+
+        if rel['arating'] >= settings.risk_highrate_th and rel['brating'] >= settings.risk_highrate_th:
+            rating_cell = Text(f"{rel['arating']:.1f} {rel['brating']:.1f}", style='red')
+        else:
+            rating_cell = Text(f"{rel['arating']:.1f} {rel['brating']:.1f}")
+
+        table.add_row(tags_cell, _c.get_title(), _c.get_town(), _c.alias or Text(_c.object_id, style='grey30'), hits_cell,
+                        # f"{rel.mean:.1f}", 
+                        median_cell, rating_cell)
     print()
+    console.print(table)
+    print_json(data=report['score'])
 
-
-    print("Weighted Scores:")
-    for k,v in sorted(c_weight.items(), key=lambda x: x[1], reverse=True):
-        if v<=WSCORE_THRESHOLD or c_hits[k] < WSCORE_HITS_THRESHOLD:
-            if k in debug_oids:
-                print(f"!! DEBUG: {k} {v:.3f} (< {WSCORE_THRESHOLD})  {c_hits[k]} (< {WSCORE_HITS_THRESHOLD})")
-            continue
-        # logger.debug(f"add suspicious company {k} with wscore {v:.3f} from {c}")
-        # db.add_company_todo(k)
-        _c = Company(k)
-
-        print(f"{_c} h: {c_hits[k]} w: {c_weight[k]:.3f}")
-        
-    print(c.relations)
-
-    print(f"# processed {processed_users} users {processed_reviews} reviews in {round(time.time() - start, ndigits=2)} sec")
-    db.remove_company_todo(c.object_id)
-
+    # rprint(self)

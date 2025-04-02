@@ -7,7 +7,12 @@ dependencies = [
     "rich",
     "argalias",
     "python-dotenv",
-    "numpy"
+    "numpy",
+    "fastapi",
+    "uvicorn",
+    "jinja2",
+    "python-multipart",
+    "dramatiq[redis, watch]"
     ]
 requires-python = ">=3.8"
 authors = [{ name = "Yaroslav Polyakov", email = "yaroslaff@gmail.com" }]
@@ -19,6 +24,8 @@ Repository = "https://github.com/yaroslaff/scrape2gis"
 
 [project.scripts]
 af2gis = "antifraud2gis.cli.main:main"
+af2worker = "antifraud2gis.cli.af2worker:main"
+af2web = "antifraud2gis.cli.af2web:main"
 
 [build-system]
 # requires = ["setuptools"]

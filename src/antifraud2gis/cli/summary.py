@@ -34,7 +34,7 @@ def printsummary(cl: CompanyList):
         if c.error:
             nerr += 1
             continue
-        if c.score.get('NR') is None:
+        if not c.report_path.exists():
             nncalc += 1
             continue
         ncalc += 1

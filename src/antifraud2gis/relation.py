@@ -14,6 +14,22 @@ from rich import print as rprint
 
 # print(settings.risk_hit_th, settings.risk_median_th, settings.show_hit_th)
 
+users_added = 0
+
+
+def _is_dangerous(avg_arating, avg_brating, count, median):
+    # high-rate check
+    if avg_arating >= settings.risk_highrate_th and avg_brating >= settings.risk_highrate_th:
+        if count >= settings.risk_highrate_hit_th and median <= settings.risk_highrate_median_th:
+            return True
+
+    # default check
+    if count >= settings.risk_hit_th and median <= settings.risk_median_th:
+        return True
+    return False
+        
+
+
 class Relation:
     """ relation between two companies """
 
@@ -43,6 +59,7 @@ class Relation:
         self.avg_brating = None
 
     def add_user(self, user, a_rating, b_rating):
+        global users_added
         if user in self._users:
             # print(f"ALREADY EXISTS {user} for {self.b}")
             pass
@@ -50,6 +67,7 @@ class Relation:
         self._aratings.append(a_rating)
         self._bratings.append(b_rating)
         self.nusers = len(self._users)
+        users_added += 1
 
     def calc(self):
         if self._calculated:
@@ -80,8 +98,11 @@ class Relation:
         for u in self._users:
             yield u
 
-    def is_dangerous(self):
+
+    def is_dangerous(self, avg_arating=None, avg_brating=None, count=None, median=None):
         self.calc()
+
+        return _is_dangerous(self.avg_arating, self.avg_brating, self.count, self.median)
 
         # high-rate check
         if self.avg_arating >= settings.risk_highrate_th and self.avg_brating >= settings.risk_highrate_th:
@@ -226,4 +247,29 @@ class RelationDict:
         print()
         console.print(table)
 
-        rprint(self)
+        print("added:", users_added)
+
+    def export(self):
+        rellist = list()
+
+        for rel in sorted(self.relations.values(), key=lambda x: x.count, reverse=True):
+            rel.calc()
+
+            # hide if not dangerous and low count
+            if not rel.is_dangerous() and rel.count < settings.show_hit_th:
+                continue
+            _c = Company(rel.b)
+            data = dict()
+            data['tags'] = _c.tags
+            data['title'] = _c.get_title()
+            data['town'] = _c.get_town()
+            data['alias'] = _c.alias
+            data['oid'] = _c.object_id
+            data['hits'] = rel.count
+            data['median'] = rel.median
+            data['arating'] = rel.avg_arating
+            data['brating'] = rel.avg_brating
+            rellist.append(data)
+        return rellist
+
+

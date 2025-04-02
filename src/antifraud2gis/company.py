@@ -2,6 +2,7 @@ import json
 from loguru import logger
 import time
 import sys
+import gzip
 import traceback
 import numpy as np
 
@@ -10,6 +11,7 @@ from .const import DATAFORMAT_VERSION, SLEEPTIME, WSS_THRESHOLD, LOAD_NREVIEWS, 
 from .user import User
 from .review import Review
 from .session import session
+from .exceptions import AFNoCompany
 
 # to avoid circular import
 class RelationDict:
@@ -24,8 +26,10 @@ class Company:
         assert object_id.isdigit()
 
         self.object_id = object_id
-        self.reviews_path = settings.company_storage / (object_id + '-reviews.json')
-        self.basic_path = settings.company_storage / (object_id + '-basic.json')
+        self.reviews_path = settings.company_storage / (object_id + '-reviews.json.gz')
+        self.basic_path = settings.company_storage / (object_id + '-basic.json.gz')
+        self.report_path = settings.company_storage / (object_id + '-report.json.gz')
+
         self._reviews = list()
         
         # basic info
@@ -42,15 +46,33 @@ class Company:
 
 
         # ratings
-        self.score = dict()
-        self.score['NR'] = None
-        self.score['TwinScore'] = None
-        self.score['WSS'] = None
+        # self.score = dict()
+        # self.score['NR'] = None
+        # self.score['TwinScore'] = None
+        # self.score['WSS'] = None
 
         self.frozen = False
 
         self.load_basic()
         self.relations = None
+
+    @staticmethod
+    def wipe(object_id: str):
+        assert object_id.isdigit()
+        # wipe everything for company
+        filelist =  [ 
+            settings.company_storage / (object_id + '-reviews.json.gz'),
+            settings.company_storage / (object_id + '-basic.json.gz'),
+            settings.company_storage / (object_id + '-report.json.gz') 
+            ]
+        
+        for f in filelist:
+            if f.exists():
+                print("unlink", f)
+                f.unlink()
+
+
+
 
     def load_basic(self):
         if not self.load_basic_from_disk():            
@@ -63,7 +85,7 @@ class Company:
 
     def load_basic_from_disk(self):
         if self.basic_path.exists():
-            with open(self.basic_path) as f:
+            with gzip.open(self.basic_path, "rt") as f:
                 _basic = json.load(f)
                 version = int(_basic.get('version', 0))
                 if version != DATAFORMAT_VERSION:
@@ -75,7 +97,7 @@ class Company:
                 self.remark = _basic['remark']
                 self.address = _basic.get('address')
                 self.version = _basic.get('version', 0)
-                self.score = _basic.get('score', dict())
+                # self.score = _basic.get('score', dict())
                 self.error = _basic.get('error', None)
                 self.frozen = _basic.get('frozen', False)
                 self.tags = _basic.get('tags', None)
@@ -88,14 +110,14 @@ class Company:
 
 
     def save_basic(self):
-        with open(self.basic_path, 'w') as f:
+        with gzip.open(self.basic_path, 'wt') as f:
             basic = {
                 'version': DATAFORMAT_VERSION,
                 'title': self.title, 
                 'alias': self.alias,
                 'remark': self.remark,
                 'address': self.address,
-                'score': self.score,
+                # 'score': self.score,
                 'error': self.error,
                 'frozen': self.frozen
             }
@@ -109,7 +131,7 @@ class Company:
             return
         
         if self.reviews_path.exists():
-            with open(self.reviews_path) as f:
+            with gzip.open(self.reviews_path, "rt") as f:
                 # print(f"Load company reviews from {self.reviews_path} mtime: {int(self.reviews_path.stat().st_mtime)} sz: {self.reviews_path.stat().st_size}")
                 self._reviews = json.load(f)
                 self.count_rate()
@@ -173,6 +195,10 @@ class Company:
 
             r.raise_for_status()
             data = r.json()
+            total_count = data['meta']['total_count']
+            if total_count == 0:
+                raise AFNoCompany
+
             self._reviews.extend(data['reviews'])
             url = data['meta'].get('next_link')
             time.sleep(SLEEPTIME)
@@ -191,7 +217,7 @@ class Company:
 
         self.count_rate()
 
-        with open(self.reviews_path, 'w') as f:
+        with gzip.open(self.reviews_path, 'wt') as f:
             json.dump(self._reviews, f)
 
 
@@ -212,26 +238,14 @@ class Company:
 
         if self.error:
             return f'Company({self.object_id} {self.title!r} ERR:{self.error})'
-
-
-        if self.score.get('WSS') is None:
-            risktag = "?"
-        elif self.score['WSS'] > 100+WSS_THRESHOLD:
-            risktag = "!"
-        else:
-            risktag = " "
-
-        nrscore = f"{self.score.get('NR'):.2f}" if self.score.get("NR") else "-"
-        twinscore = f"{self.score.get('TwinScore'):.2f}" if self.score.get("TwinScore") else "-"
-        wss = f"{self.score.get('WSS'):.2f}" if self.score.get("WSS") is not None else "-"
-    
+   
         titlestr = f"{self.title!r} [{self.alias}]" if self.alias else repr(self.title)
 
         tags = " "
         if self.frozen:
             tags += "[FROZEN]"
 
-        return f'Company({self.object_id} rate:{self.rate} {risktag} {titlestr} ({"RISK" if self.risk() else "OK"}: {nrscore} {twinscore} {wss}) addr: {self.address} reviews:{len(self._reviews) if self._reviews else "not loaded"}{tags})'
+        return f'Company({self.object_id} rate:{self.rate} {titlestr} addr: {self.address} reviews:{len(self._reviews) if self._reviews else "not loaded"}{tags})'
 
     def get_title(self):
         return self.title or self.object_id
@@ -300,7 +314,7 @@ class CompanyList():
         self.path = path or settings.company_storage
     
     def __getitem__(self, index):
-        basicpath = self.path / f'{index}-basic.json'
+        basicpath = self.path / f'{index}-basic.json.gz'
         if basicpath.exists():
             logger.debug(f"Found company {index} by ID")
             return Company(index)
@@ -316,14 +330,14 @@ class CompanyList():
 
 
     def companies(self):
-        for f in self.path.glob('*-basic.json'):
+        for f in self.path.glob('*-basic.json.gz'):
             oid = f.name.split('-')[0]
             c = Company(oid)
             yield c
     
 
     def company_exists(self, oid):
-        basicpath = self.path / f'{oid}-basic.json'
+        basicpath = self.path / f'{oid}-basic.json.gz'
         return basicpath.exists()
 
     def getdesc(self, oid):

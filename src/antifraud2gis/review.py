@@ -1,3 +1,6 @@
+import datetime
+from rich import print_json
+
 class Review():
     def __init__(self, data):    
         self._data = data
@@ -8,6 +11,9 @@ class Review():
         self.user_name = data['user']['name']
         self.text = data.get('text')        
         self.nphotos = len(data['photos'])
+        
+        self.created = datetime.datetime.strptime(data['date_created'].split('T')[0], "%Y-%m-%d")
+        self.age = (datetime.datetime.now() - self.created).days
 
         try:
             self.title = data['object']['name']

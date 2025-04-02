@@ -8,6 +8,7 @@ from rich.pretty import Pretty
 from rich import print_json
 import traceback
 import sys
+import gzip
 
 from .db import db
 from .const import WSS_THRESHOLD, LOAD_NREVIEWS, SLEEPTIME
@@ -47,7 +48,7 @@ class User:
 
     def load(self, local_only=False):
         if self.reviews_path.exists():
-            with open(self.reviews_path) as f:
+            with gzip.open(self.reviews_path, "rt") as f:
                 self._reviews = json.load(f)
         else:
             if local_only is False:
@@ -134,7 +135,7 @@ class User:
 
         print(f"user {self.name} loaded {len(self._reviews)} reviews")
         print("save to", self.reviews_path)
-        with open(self.reviews_path, 'w') as f:
+        with gzip.open(self.reviews_path, 'wt') as f:
             json.dump(self._reviews, f)
 
     @property
