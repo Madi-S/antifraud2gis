@@ -11,6 +11,7 @@ from ..logger import logger
 from ..company import Company, CompanyList
 from ..fraud import detect
 from ..db import db
+from ..settings import settings
 
 
 def add_summary_parser(subparsers):
@@ -25,7 +26,7 @@ def printsummary(cl: CompanyList):
 
     global last_summary
 
-    userpath = Path(".storage/users")
+    userpath = settings.user_storage
     total = len(list(cl.companies()))    
     nerr = 0
     ncalc = 0

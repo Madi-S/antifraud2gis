@@ -2,7 +2,7 @@ __pycache__
 *.log
 *.gz
 .env
-.storage
+.af2gis-storage
 *.egg-info/
 .cache
 build/

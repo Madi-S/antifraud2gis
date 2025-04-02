@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 class Settings():
     def __init__(self):
         load_dotenv()
-        self.storage = Path(".storage")
+        self.storage = Path(".af2gis-storage")
         self.user_storage = self.storage / "users"
         self.private_user_storage = self.storage / "users" / "_private.json"
 
