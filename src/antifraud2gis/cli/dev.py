@@ -18,15 +18,12 @@ def countdown(n=5):
 
 def add_dev_parser(subparsers):
     dev_parser = subparsers.add_parser("dev", help="debug utilities for developer")
+    dev_parser.add_argument("args", nargs=argparse.REMAINDER)
     dev_parser.add_argument("cmd", choices=['delerror', 'reinit', 'findnew', 'location'])
     dev_parser.add_argument("--real", default=False, action='store_true', help='Run dangerous operation for real (otherwise - dry run)')
     dev_parser.add_argument("--now", default=False, action='store_true', help='No countdown, run immediately')
-    dev_parser.add_argument("args", nargs=argparse.REMAINDER)
 
     return dev_parser
-
-
-
 
 
 def reinit(cl: CompanyList):
@@ -121,6 +118,11 @@ def reinit(cl: CompanyList):
             'alias': 'gorodok',
         }
     }
+
+    for path in [ settings.storage, settings.company_storage, settings.user_storage]:
+        if not path.exists():
+            print(f"Create {path}")
+            path.mkdir()
 
 
     for oid, data in companies.items():
