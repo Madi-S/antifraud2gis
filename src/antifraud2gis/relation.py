@@ -1,5 +1,6 @@
 from .company import Company
 from .settings import settings
+from .exceptions import AFNoCompany
 import os
 import numpy as np
 
@@ -17,14 +18,18 @@ from rich import print as rprint
 users_added = 0
 
 
-def _is_dangerous(avg_arating, avg_brating, count, median):
+def _is_dangerous(avg_arating, avg_brating, count, median, debug=False):
     # high-rate check
     if avg_arating >= settings.risk_highrate_th and avg_brating >= settings.risk_highrate_th:
+        if debug:
+            print("high ratings")
         if count >= settings.risk_highrate_hit_th and median <= settings.risk_highrate_median_th:
             return True
 
     # default check
     if count >= settings.risk_hit_th and median <= settings.risk_median_th:
+        if debug:
+            print("low ratings")
         return True
     return False
         
@@ -101,6 +106,9 @@ class Relation:
 
     def is_dangerous(self, avg_arating=None, avg_brating=None, count=None, median=None):
         self.calc()
+        
+        if self.b == '70000001027418091':
+            print(_is_dangerous(self.avg_arating, self.avg_brating, self.count, self.median, debug=True))
 
         return _is_dangerous(self.avg_arating, self.avg_brating, self.count, self.median)
 
@@ -258,7 +266,11 @@ class RelationDict:
             # hide if not dangerous and low count
             if not rel.is_dangerous() and rel.count < settings.show_hit_th:
                 continue
-            _c = Company(rel.b)
+            try:
+                _c = Company(rel.b)
+            except AFNoCompany:
+                print(f"Ignore NO-COMPANY {rel.b} with {rel.count} hits")
+                continue
             data = dict()
             data['tags'] = _c.tags
             data['title'] = _c.get_title()

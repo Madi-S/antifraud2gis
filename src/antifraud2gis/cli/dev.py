@@ -6,6 +6,10 @@ import pkg_resources
 from ..company import CompanyList, Company
 from ..user import User
 from ..settings import settings
+from ..fraud import detect, dump_report
+from ..exceptions import AFNoCompany
+
+from .summary import printsummary
 
 from rich.text import Text
 
@@ -137,12 +141,32 @@ def reinit(cl: CompanyList):
 
 
 def findnew():
+
+    found = False
+
     # read random user
+    cl = CompanyList()
     files = [f for f in settings.user_storage.iterdir() if f.is_file()]
-    uid = random.choice(files).name.split('-')[0]
-    u = User(uid)
-    for r in u.reviews():
-        print(r)
+
+    while not found:
+        uid = random.choice(files).name.split('-')[0]
+        u = User(uid)
+        for r in u.reviews():
+            print(r)
+            try:
+                c = cl[r.oid]            
+                print("Exist:", c)
+            except KeyError as e:
+                try:
+                    c = Company(r.oid)
+                except AFNoCompany as e:
+                    continue
+                detect(c, cl)
+                dump_report(r.oid)
+                found = True
+    
+    printsummary(cl)
+
 
 
 def handle_dev(args: argparse.Namespace):

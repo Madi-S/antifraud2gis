@@ -42,7 +42,7 @@ def retry(max_attempts=3, delay=1):
 class User:
     def __init__(self, public_id):
         self.public_id = public_id
-        self.reviews_path = settings.user_storage / (public_id + '-reviews.json')
+        self.reviews_path = settings.user_storage / (public_id + '-reviews.json.gz')
         self._reviews = list()
         self.load(local_only=True)
 

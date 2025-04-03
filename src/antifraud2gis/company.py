@@ -180,6 +180,7 @@ class Company:
     def load_reviews_from_network(self):
         url = f'https://public-api.reviews.2gis.com/2.0/branches/{self.object_id}/reviews?limit=50&fields=meta.providers,meta.branch_rating,meta.branch_reviews_count,meta.total_count,reviews.hiding_reason,reviews.is_verified&without_my_first_review=false&rated=true&sort_by=friends&key={REVIEWS_KEY}&locale=ru_RU'
         unused_geo = f'https://public-api.reviews.2gis.com/2.0/geo/141373143684284/reviews?limit=50&fields=meta.providers,meta.geo_rating,meta.geo_reviews_count,meta.total_count,reviews.hiding_reason&sort_by=friends&without_my_first_review=false&key={REVIEWS_KEY}&locale=ru_RU'
+
         page=0
         while url:
             logger.debug(f".. load reviews p{page} for {self}: {url}")
@@ -195,9 +196,10 @@ class Company:
 
             r.raise_for_status()
             data = r.json()
-            total_count = data['meta']['total_count']
-            if total_count == 0:
-                raise AFNoCompany
+            total_count = data['meta']['total_count']            
+            branch_reviews_count = data['meta']['branch_reviews_count']
+            if total_count == 0 or branch_reviews_count == 0:                
+                raise AFNoCompany(f"No reviews for {self.object_id}")
 
             self._reviews.extend(data['reviews'])
             url = data['meta'].get('next_link')
