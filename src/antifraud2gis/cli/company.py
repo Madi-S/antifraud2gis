@@ -112,10 +112,10 @@ def handle_company(args: argparse.Namespace):
     elif cmd == "fraudfirst":
         for c in cl.companies():
             if c.error:
-                print("skip error", c)
+                # print("skip error", c)
                 continue
             if c.report_path.exists():
-                print("skip already reported", c)                
+                # print("skip already reported", c)                
                 continue
             print(c)
             detect(c, cl)

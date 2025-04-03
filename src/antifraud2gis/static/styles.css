@@ -27,7 +27,7 @@ h1 {
     gap: 10px;
 }
 
-#company-input {
+#oid {
     flex-grow: 1;
     padding: 10px;
     border: 1px solid #ddd;
@@ -124,3 +124,8 @@ a:hover {
     background-color: #ef9a9a;
     color: #b71c1c;
 }
+
+#trusted { font-family: Arial, sans-serif; }
+.company { margin-bottom: 10px; cursor: pointer; }
+.company-title { font-weight: bold; }
+.company-address { font-size: 0.9em; color: gray; }
