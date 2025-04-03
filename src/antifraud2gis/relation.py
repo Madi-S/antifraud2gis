@@ -21,16 +21,13 @@ users_added = 0
 def _is_dangerous(avg_arating, avg_brating, count, median, debug=False):
     # high-rate check
     if avg_arating >= settings.risk_highrate_th and avg_brating >= settings.risk_highrate_th:
-        if debug:
-            print("high ratings")
         if count >= settings.risk_highrate_hit_th and median <= settings.risk_highrate_median_th:
             return True
 
     # default check
-    if count >= settings.risk_hit_th and median <= settings.risk_median_th:
-        if debug:
-            print("low ratings")
+    if count >= settings.risk_hit_th and median <= settings.risk_median_th:            
         return True
+    
     return False
         
 
@@ -107,9 +104,6 @@ class Relation:
     def is_dangerous(self, avg_arating=None, avg_brating=None, count=None, median=None):
         self.calc()
         
-        if self.b == '70000001027418091':
-            print(_is_dangerous(self.avg_arating, self.avg_brating, self.count, self.median, debug=True))
-
         return _is_dangerous(self.avg_arating, self.avg_brating, self.count, self.median)
 
         # high-rate check
