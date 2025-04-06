@@ -79,7 +79,7 @@ class User:
             logger.debug("skip: private profile from shelf", self.public_id)
             return
 
-        print(f"  # load (network) reviews for user {self.public_id}")
+        # print(f"  # load (network) reviews for user {self.public_id}")
 
         # why we were called?
         # print("".join(traceback.format_stack(limit=10))) 
@@ -93,11 +93,11 @@ class User:
             time.sleep(SLEEPTIME)
             r = session.get(url)
             if r.status_code == 403:
-                print("New private profile", self.public_id)
+                # print("New private profile", self.public_id)
                 db.add_private_profile(self.public_id)
                 return
             elif r.status_code in [400, 500]:
-                logger.warning(f"user {self} revied error {r.status_code} url: {url}")
+                logger.warning(f"user {self} reviews error {r.status_code} url: {url}")
                 break
             else:
                 r.raise_for_status()
@@ -133,8 +133,8 @@ class User:
             page+=1
 
 
-        print(f"user {self.name} loaded {len(self._reviews)} reviews")
-        print("save to", self.reviews_path)
+        # print(f"user {self.name} loaded {len(self._reviews)} reviews")
+        # print("save to", self.reviews_path)
         with gzip.open(self.reviews_path, 'wt') as f:
             json.dump(self._reviews, f)
 

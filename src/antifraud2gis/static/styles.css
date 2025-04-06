@@ -129,3 +129,75 @@ a:hover {
 .company { margin-bottom: 10px; cursor: pointer; }
 .company-title { font-weight: bold; }
 .company-address { font-size: 0.9em; color: gray; }
+
+
+/* Result div, table */
+/* Modern Table Design */
+#result-container {
+    font-family: 'Segoe UI', Roboto, -apple-system, sans-serif;
+    max-width: 100%;
+    overflow-x: auto;
+    margin: 2rem auto;
+    padding: 1.5rem;
+    background-color: #cccccc;  /* Light grey background */
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+#result-container table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+#result-container thead {
+    background-color: #f8f9fa;
+    color: #2d3748;
+}
+
+#result-container th {
+    padding: 1rem 1.5rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+#result-container td {
+    padding: 0rem 1.0rem;
+    border-bottom: 1px solid #edf2f7;
+    color: #4a5568;
+    font-size: 0.95rem;
+}
+
+/* Zebra striping with subtle grey shades */
+#result-container tbody tr:nth-child(odd) {
+    background-color: #ffffff;
+}
+
+#result-container tbody tr:nth-child(even) {
+    background-color: #ddd;  /* Slightly darker than white */
+}
+
+#result-container tbody tr:hover {
+    background-color: #bbb;  /* Light blue-grey on hover */
+}
+
+#result-container tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #result-container {
+        padding: 1rem;
+    }
+    #result-container th,
+    #result-container td {
+        padding: 0.75rem 1rem;
+    }
+}

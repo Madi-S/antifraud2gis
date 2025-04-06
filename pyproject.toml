@@ -12,7 +12,7 @@ dependencies = [
     "uvicorn",
     "jinja2",
     "python-multipart",
-    "dramatiq[redis, watch]"
+    "dramatiq[redis, watch]",    
     ]
 requires-python = ">=3.8"
 authors = [{ name = "Yaroslav Polyakov", email = "yaroslaff@gmail.com" }]

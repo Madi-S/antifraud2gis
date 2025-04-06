@@ -128,9 +128,17 @@ def reinit(cl: CompanyList):
             print(f"Create {path}")
             path.mkdir()
 
+    
+    deleted_reports = 0
+    for c in cl.companies():
+        # c = Company(oid)
+        if c.report_path.exists():
+            c.report_path.unlink()
+            deleted_reports += 1
+    print(f"deleted {deleted_reports} old reports")
+
 
     for oid, data in companies.items():
-        c = Company(oid)
         c.load_basic_from_network()
         if 'alias' in data:
             c.alias = data['alias']
@@ -154,7 +162,7 @@ def findnew():
         for r in u.reviews():
             print(r)
             try:
-                c = cl[r.oid]            
+                c = cl[r.oid]
                 print("Exist:", c)
             except KeyError as e:
                 try:

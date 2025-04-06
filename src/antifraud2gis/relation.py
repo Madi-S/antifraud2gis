@@ -21,12 +21,11 @@ users_added = 0
 def _is_dangerous(avg_arating, avg_brating, count, median, debug=False):
     # high-rate check
     if avg_arating >= settings.risk_highrate_th and avg_brating >= settings.risk_highrate_th:
-        if count >= settings.risk_highrate_hit_th and median <= settings.risk_highrate_median_th:
+        #if count >= settings.risk_highrate_hit_th and median <= settings.risk_highrate_median_th:
+        #    return True
+        # default check
+        if count >= settings.risk_hit_th and median <= settings.risk_median_th:            
             return True
-
-    # default check
-    if count >= settings.risk_hit_th and median <= settings.risk_median_th:            
-        return True
     
     return False
         

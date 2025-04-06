@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Результаты статистического анализа для {{title}}</title>
+    <link href="/static/styles.css" rel="stylesheet">
+</head>
+<body>
+    <h1>Результаты статистического анализа для {{title}}</h1>
+    
+    <div class="search-container">
+        <form class="search-form" id="search-form">
+            <input type="text" id="oid" placeholder="Введите название компании" required>
+            <button type="submit">Найти</button>
+        </form>
+    </div>
+    
+    <div class="result-container" id="result-container">
+        <table>
+            {'tags': None, 'title': 'Harucha, Точки безалкогольных напитков', 'town': 'Новосибирск', 'alias': None, 'oid': '70000001080364339', 
+            'hits': 16, 'median': 7, 'arating': 4.5, 'brating': 5.0}
+            <thead>
+                <th>Компания</th>
+                <th>Город</th>
+                <th>hits</th>
+                <th>median</th>
+                <th>ratings</th>
+            </thead>
+            <tbody>
+                {% for rel in relations %}
+                    <tr>
+                        <td><a href="/report/{{rel.oid}}">{{rel.title}}                            
+                        </td>
+                        <td>{{rel.town}}</td>
+                        <td>{{rel.hits}}</td>
+                        <td>{{rel.median}}</td>
+                        <td>{{rel.arating | round(1)}} {{rel.brating | round(1)}}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div>
+            <details>
+                <summary>
+                  Score details
+                </summary>
+                <div>
+                    {% for key, value in score.items() %}
+                        {{key}}: {{value}}<br>
+                    {% endfor%}    
+                </div>
+              </details>
+              
+
+
+        </div>
+
+    </div>
+
+    <div id="result">
+    </div>
+    
+    <div class="company-lists">
+        <div class="company-list trusted-companies" id="trusted">
+            <h2>Trusted</h2>
+        </div>
+        
+        <div class="company-list suspicious-companies">
+            <h2>Untrusted</h2>
+        </div>
+    </div>
+
+
+
+    <div class="company-lists">
+        <div class="company-list trusted-companies">
+            <h2>Проверенные компании</h2>
+            <ul>
+                <li><a href="#" class="company-link">ООО "ГеоСтройПроект" <span class="company-tag trusted-tag">Проверено</span></a></li>
+                <li><a href="#" class="company-link">АО "ТрансГеоТех" <span class="company-tag trusted-tag">Проверено</span></a></li>
+                <li><a href="#" class="company-link">ЗАО "ГеоИнвест" <span class="company-tag trusted-tag">Проверено</span></a></li>
+                <li><a href="#" class="company-link">ООО "ЭкоГеоСервис" <span class="company-tag trusted-tag">Проверено</span></a></li>
+                <li><a href="#" class="company-link">НПО "ГеоАналитика" <span class="company-tag trusted-tag">Проверено</span></a></li>
+            </ul>
+        </div>
+        
+        <div class="company-list suspicious-companies">
+            <h2>Подозрительные компании</h2>
+            <ul>
+                <li><a href="#" class="company-link">ООО "ГеоМираж" <span class="company-tag suspicious-tag">Подозрительная</span></a></li>
+                <li><a href="#" class="company-link">АО "БыстрыйГеоСервис" <span class="company-tag suspicious-tag">Подозрительная</span></a></li>
+                <li><a href="#" class="company-link">ЗАО "ГеоФастГрупп" <span class="company-tag suspicious-tag">Подозрительная</span></a></li>
+                <li><a href="#" class="company-link">ООО "ГеоЭкспресс" <span class="company-tag suspicious-tag">Подозрительная</span></a></li>
+                <li><a href="#" class="company-link">НПО "ГеоТехнологии" <span class="company-tag suspicious-tag">Подозрительная</span></a></li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js">
+    </script>
+</body>
+</html>

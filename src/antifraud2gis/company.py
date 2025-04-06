@@ -5,6 +5,7 @@ import sys
 import gzip
 import traceback
 import numpy as np
+from rich.progress import Progress
 
 from .settings import settings
 from .const import DATAFORMAT_VERSION, SLEEPTIME, WSS_THRESHOLD, LOAD_NREVIEWS, REVIEWS_KEY
@@ -166,16 +167,20 @@ class Company:
     def load_users(self):
         self.load_reviews()
         # print(f"load users from {len(self._reviews)} reviews")
-        for idx, r in enumerate(self._reviews):
-            upid = r['user']['public_id']
-                        
-            if upid is None:
-                # print("skip: no public_id", r['user']['name'])
-                continue
+        with Progress() as progress:
+            task = progress.add_task("[cyan]Loading user's reviews...", total=len(self._reviews))
 
-            logger.debug(f"Loading user {r['user']['name']} {upid} ({idx+1}/{len(self._reviews)})")
-            user = User(upid)
-            user.load()
+            for idx, r in enumerate(self._reviews):
+                progress.update(task, advance=1, description=f"[green]User {idx}")
+                upid = r['user']['public_id']
+
+                if upid is None:
+                    # print("skip: no public_id", r['user']['name'])
+                    continue
+
+                logger.debug(f"Loading user {r['user']['name']} {upid} ({idx+1}/{len(self._reviews)})")
+                user = User(upid)
+                user.load()
 
     def load_reviews_from_network(self):
         url = f'https://public-api.reviews.2gis.com/2.0/branches/{self.object_id}/reviews?limit=50&fields=meta.providers,meta.branch_rating,meta.branch_reviews_count,meta.total_count,reviews.hiding_reason,reviews.is_verified&without_my_first_review=false&rated=true&sort_by=friends&key={REVIEWS_KEY}&locale=ru_RU'
@@ -331,10 +336,19 @@ class CompanyList():
         raise KeyError(f"Company {index} not found")
 
 
-    def companies(self):
+    def companies(self, town = None):
         for f in self.path.glob('*-basic.json.gz'):
             oid = f.name.split('-')[0]
-            c = Company(oid)
+            c = Company(oid)        
+            if town:                
+                # filter by town
+                town = town.lower()
+                ctown = c.get_town()
+                if ctown is None:
+                    continue
+                ctown = ctown.lower()
+                if town != ctown:
+                    continue
             yield c
     
 

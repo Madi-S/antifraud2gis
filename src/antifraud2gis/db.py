@@ -41,7 +41,7 @@ class MyDB:
     def save_private_profiles(self):
         with open(self.path_private_profiles, 'w') as f:
             json.dump(self.private_profiles, f)
-            logger.info(f"Saved {len(self.private_profiles)} private profiles")
+            # logger.info(f"Saved {len(self.private_profiles)} private profiles")
 
     def save_companies(self):
         with open(self.path_companies, 'w') as f:

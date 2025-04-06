@@ -12,14 +12,18 @@ from ..tasks import fraud_task
 from ..exceptions import AFReportNotReady, AFNoCompany
 from ..settings import settings
 from .summary import printsummary
+from pathlib import Path
+
+stopfile = Path('.stop')
 
 def add_company_parser(subparsers):
     company_parser = subparsers.add_parser("company", help="info/operations about company")
-    company_parser.add_argument("cmd", choices=["wipe", "submit","list", "info", "export", "settag", "fraud", "compare", "delete", "fraudfirst", "sum", 
+    company_parser.add_argument("cmd", choices=["wipe", "submit", "list", "info", "export", "settag", "fraud", "compare", "delete", "fraud1", "fraudall", "sum", 
                                                 "summary", "setalias", "freeze", "unfreeze", "users", "reviews", "erasescore", "fixscore",
                                                 "reload", "report"])
     company_parser.add_argument("object_id", nargs='?', default=None)
     company_parser.add_argument("--show", "-s", type=int, default=settings.show_hit_th, help="override show_hit_th")
+    company_parser.add_argument("--town", "-t", help="Process only companies in this town")
     company_parser.add_argument("args", nargs='*')
 
 
@@ -50,6 +54,10 @@ def handle_company(args: argparse.Namespace):
                 print("company not found")
                 sys.exit(1)
         print(company)
+    
+    elif cmd == "list":
+        for c in cl.companies(town=args.town):
+            print(c)
 
     elif cmd == "submit":
         fraud_task.send(args.object_id)
@@ -109,8 +117,8 @@ def handle_company(args: argparse.Namespace):
     elif cmd == "settag":
         company.set_tag(args.args[0])
 
-    elif cmd == "fraudfirst":
-        for c in cl.companies():
+    elif cmd == "fraud1":
+        for c in cl.companies(town=args.town):
             if c.error:
                 # print("skip error", c)
                 continue
@@ -122,6 +130,24 @@ def handle_company(args: argparse.Namespace):
             dump_report(c.object_id)
             printsummary(cl)
             return
+
+    elif cmd == "fraudall":
+        for c in cl.companies(town=args.town):
+            if c.error:
+                # print("skip error", c)
+                continue
+            if c.report_path.exists():
+                # print("skip already reported", c)                
+                continue
+            print(c)
+            detect(c, cl)
+            dump_report(c.object_id)
+            printsummary(cl)
+            if stopfile.exists():
+                print("Stopfile found, stopping")
+                stopfile.unlink()
+                break
+
 
 
     elif cmd == "compare":

@@ -77,8 +77,8 @@ async def report(request: Request):
 
     return data
 
-@app.post("/report")
-async def report(data: ReportRequest):
+@app.post("/api/report")
+async def api_report(data: ReportRequest):
     print("report for", data.oid)
     c = Company(data.oid)
     print("report for", c)
@@ -93,6 +93,35 @@ async def report(data: ReportRequest):
 
     return "OK"
 
+@app.get("/report/{oid}", response_class=HTMLResponse)
+async def report(request: Request, oid: str):
+    print("HTML report for", oid)
+    try:
+        c = Company(oid)
+    except AFNoCompany:
+        raise HTTPException(status_code=404, detail="Company not found")
+    print("report for", c)
+
+    try:
+        print("read report from", c.report_path)
+        with gzip.open(c.report_path, "rt") as fh:
+            report = json.load(fh)
+            print(report['relations'][0])
+
+            return templates.TemplateResponse(
+                "report.html", {
+                    "request": request, "title": c.title,
+                    "score": report['score'],
+                    "relations": report['relations']}
+            )
+
+            return report
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    return "OK"
+
+
 def main():
     global templates    
     import uvicorn
@@ -100,3 +129,5 @@ def main():
     load_dotenv()
     uvicorn.run("antifraud2gis.cli.af2web:app", host="0.0.0.0", port=8000, reload=auto_reload)
 
+if __name__ == "__main__":
+    main()

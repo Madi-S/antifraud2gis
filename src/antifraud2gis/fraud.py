@@ -9,7 +9,7 @@ import time
 import datetime
 import numpy as np
 import gzip
-
+from rich.progress import Progress
 
 from .db import db
 from .const import WSCORE_THRESHOLD, WSCORE_HITS_THRESHOLD, MAX_USER_REVIEWS
@@ -137,59 +137,74 @@ def detect(c: Company, cl: CompanyList, force=False):
     # We should have our own numbers/per reviews list to catch users with 1 review. Relations will not catch it.
     nrlist = list()
 
-    for cr in c.reviews():
-        if cr.age > settings.max_review_age:
-            # too old review, safely skip it
-            # print("Skip review", cr)
-            continue
 
-        if cr.uid is None:
-            # print("!! Skip review without user", cr)
-            skipped_users += 1
-            skipped_users_ratings.append(cr.rating)
-            continue
-        u = cr.user
+    """
+        with Progress() as progress:
+            task = progress.add_task("[cyan]Loading user's reviews...", total=len(self._reviews))
 
-        nrlist.append(u.nreviews())
+            for idx, r in enumerate(self._reviews):
+                progress.update(task, advance=1, description=f"[green]User {idx}")
+                upid = r['user']['public_id']
+    """
 
-        if u.public_id in debug_uids:
-            print(f"!! DEBUG: {u}")
 
-        if u.nreviews():
+    with Progress() as progress:
+        task = progress.add_task("[cyan]Analyzing user's reviews...", total=c.nreviews())
+
+        for idx, cr in enumerate(c.reviews()):
+            progress.update(task, advance=1, description=f"[green]User {idx}")
+            if cr.age > settings.max_review_age:
+                # too old review, safely skip it
+                # print("Skip review", cr)
+                continue
+
+            if cr.uid is None:
+                # print("!! Skip review without user", cr)
+                skipped_users += 1
+                skipped_users_ratings.append(cr.rating)
+                continue
+            u = cr.user
+
+            nrlist.append(u.nreviews())
+
             if u.public_id in debug_uids:
                 print(f"!! DEBUG: {u}")
 
-            
-            if u.nreviews() > MAX_USER_REVIEWS:
-                skipped_users += 1
-                skipped_users_ratings.append(cr.rating)
-                # print(f"Skip user {u} with {u.nreviews()} reviews")
-                continue
+            if u.nreviews():
+                if u.public_id in debug_uids:
+                    print(f"!! DEBUG: {u}")
 
-            # only for open profiles
-            for r in u.reviews():
-
-                if not r.is_visible():
+                
+                if u.nreviews() > MAX_USER_REVIEWS:
+                    skipped_users += 1
+                    skipped_users_ratings.append(cr.rating)
+                    # print(f"Skip user {u} with {u.nreviews()} reviews")
                     continue
 
-                if r.oid == c.object_id:
-                    continue
+                # only for open profiles
+                for r in u.reviews():
 
-                # print("  review:", r)
+                    if not r.is_visible():
+                        continue
 
-                rel = c.relations[r.oid]
-                rel.inc()
-                rel.add_user(u, cr.rating, r.rating)
+                    if r.oid == c.object_id:
+                        continue
 
-                c_hits[r.oid] += 1
-                c_weight[r.oid] += 1/u.nreviews()
+                    # print("  review:", r)
 
-                #if r.oid in debug_oids:
-                #    print(f"{1/u.nreviews():.2f} {u}")
+                    rel = c.relations[r.oid]
+                    rel.inc()
+                    rel.add_user(u, cr.rating, r.rating)
 
-                processed_reviews += 1
+                    c_hits[r.oid] += 1
+                    c_weight[r.oid] += 1/u.nreviews()
 
-            processed_users += 1
+                    #if r.oid in debug_oids:
+                    #    print(f"{1/u.nreviews():.2f} {u}")
+
+                    processed_reviews += 1
+
+                processed_users += 1
 
 
     if False:

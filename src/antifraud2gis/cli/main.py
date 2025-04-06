@@ -87,6 +87,7 @@ def main():
     if args.subparser is None:
         if args.stop:
             stopfile.touch()
+            print("Stopfile created in current directory")
 
     if args.subparser == "summary":
         handle_summary(args)
