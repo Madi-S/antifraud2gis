@@ -131,7 +131,6 @@ def reinit(cl: CompanyList):
     
     deleted_reports = 0
     for c in cl.companies():
-        # c = Company(oid)
         if c.report_path.exists():
             c.report_path.unlink()
             deleted_reports += 1
@@ -139,6 +138,7 @@ def reinit(cl: CompanyList):
 
 
     for oid, data in companies.items():
+        c = Company(oid)
         c.load_basic_from_network()
         if 'alias' in data:
             c.alias = data['alias']
