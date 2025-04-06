@@ -87,7 +87,13 @@ class Company:
     def load_basic_from_disk(self):
         if self.basic_path.exists():
             with gzip.open(self.basic_path, "rt") as f:
-                _basic = json.load(f)
+                try:
+                    _basic = json.load(f)
+                except json.JSONDecodeError:
+                    print("Cannot parse JSON!")
+                    print(self.basic_path)
+                    sys.exit(1)
+
                 version = int(_basic.get('version', 0))
                 if version != DATAFORMAT_VERSION:
                     logger.debug(f"version mismatch {version} != {DATAFORMAT_VERSION} for {self.object_id}")
