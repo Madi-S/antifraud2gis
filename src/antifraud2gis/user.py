@@ -20,9 +20,7 @@ from .logger import logger
 THRESHOLD_NR=3
 THRESHOLD_TS=1.5
 
-
-
-
+user_pool = dict()
 
 def retry(max_attempts=3, delay=1):
     def decorator(func):
@@ -46,10 +44,17 @@ class User:
         self._reviews = list()
         self.load(local_only=True)
 
+
+
     def load(self, local_only=False):
         if self.reviews_path.exists():
             with gzip.open(self.reviews_path, "rt") as f:
-                self._reviews = json.load(f)
+                try:
+                    self._reviews = json.load(f)
+                except json.JSONDecodeError:
+                    print("Cannot parse JSON!")
+                    print(self.reviews_path)
+                    sys.exit(1)
         else:
             if local_only is False:
                 self.load_from_network()
@@ -57,6 +62,15 @@ class User:
     def nreviews(self):
         self.load()
         return len(self._reviews)
+
+    def birthday(self):
+        self.load()
+        r = Review(self._reviews[-1])
+        return r.created
+            
+    @property
+    def birthday_str(self):
+        return self.birthday().strftime("%Y-%m-%d")
 
     def get_company_info(self, oid):
         self.load()
@@ -67,7 +81,7 @@ class User:
     def reviews(self):
         self.load()
         for r in self._reviews:
-            yield Review(r)
+            yield Review(r, user=self)
 
     def review_for(self, oid: str) -> Review:
         for r in self.reviews():
@@ -140,7 +154,7 @@ class User:
 
     @property
     def url(self):
-        return f"https://2gis.ru/x/user/{self.public_id}"
+        return f"https://2gis.ru/af2gis/user/{self.public_id}"
 
     @property
     def name(self):
@@ -153,3 +167,9 @@ class User:
     def __repr__(self):
         return f'User({self.public_id} {self.name} (rev: {len(self._reviews) if self._reviews else "not loaded"}) {self.url})'
     
+def get_user(public_id: str) -> User:
+    global user_pool
+    if public_id not in user_pool:
+        user_pool[public_id] = User(public_id)
+        # print(f"new user {public_id}")
+    return user_pool[public_id]

@@ -69,8 +69,11 @@ def handle_company(args: argparse.Namespace):
     elif cmd == "fraud":
 
         if company is None:
-            print("make company")
-            company = Company(args.object_id)
+            try:
+                company = Company(args.object_id)
+            except AFNoCompany:
+                print("company not found")
+                sys.exit(1)
 
         settings.show_hit_th = args.show
 

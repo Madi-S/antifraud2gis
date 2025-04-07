@@ -2,7 +2,7 @@ import datetime
 from rich import print_json
 
 class Review():
-    def __init__(self, data):    
+    def __init__(self, data, user=None):
         self._data = data
         self.review_id = data['id']
         self.rating = data['rating']
@@ -11,9 +11,14 @@ class Review():
         self.user_name = data['user']['name']
         self.text = data.get('text')        
         self.nphotos = len(data['photos'])
-        
+        self._user = user
+
         self.created = datetime.datetime.strptime(data['date_created'].split('T')[0], "%Y-%m-%d")
         self.age = (datetime.datetime.now() - self.created).days
+        if self._user:
+            self.user_age = (self.created - self._user.birthday()).days
+        else:
+            self.user_age = None
 
         try:
             self.title = data['object']['name']
@@ -41,9 +46,15 @@ class Review():
         return self.uid in cu
 
     @property
+    def created_str(self):
+        return self.created.strftime("%Y-%m-%d")
+
+    @property    
     def user(self):
-        from .user import User
-        return User(self.uid)
+        if self._user:
+            return self._user
+        from .user import User, get_user
+        return get_user(self.uid)
 
     @property
     def user_url(self):
@@ -68,4 +79,4 @@ class Review():
         else:
             title = "<NO TITLE>"
 
-        return f'Review( {self.uid} {user_str} (rating:{self.rating} {photo_str}) > {self.oid} {title})'
+        return f'Review({self.created_str} {self.uid} {user_str} (rating:{self.rating} {photo_str}) > {self.oid} {title})'

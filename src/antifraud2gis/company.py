@@ -10,7 +10,7 @@ from requests.exceptions import RequestException
 
 from .settings import settings
 from .const import DATAFORMAT_VERSION, SLEEPTIME, WSS_THRESHOLD, LOAD_NREVIEWS, REVIEWS_KEY
-from .user import User
+from .user import User, get_user
 from .review import Review
 from .session import session
 from .exceptions import AFNoCompany
@@ -186,7 +186,7 @@ class Company:
                     continue
 
                 logger.debug(f"Loading user {r['user']['name']} {upid} ({idx+1}/{len(self._reviews)})")
-                user = User(upid)
+                user = get_user(upid)
                 user.load()
 
     def load_reviews_from_network(self):
@@ -301,7 +301,8 @@ class Company:
         self.load_reviews()
         for r in self._reviews:
             if r['user']['public_id'] == uid:
-                return Review(r)
+                user = get_user(uid)
+                return Review(r, user=user)
 
     def load_basic_from_network(self):
 
@@ -317,7 +318,7 @@ class Company:
                 continue
 
             logger.debug(f"Loading user {r['user']['name']} {upid} ({idx+1}/{len(self._reviews)})")
-            user = User(upid)
+            user = get_user(upid)
             user.load()
             ci = user.get_company_info(self.object_id)
             if ci is None:

@@ -106,21 +106,40 @@ class Relation:
             yield u
 
 
-    def is_risk(self, riskname = 'HR'):
+    def is_risk(self, riskname = 'ANY'):
         """  risks: 
         HR - highrate and high hits
         HRLM (?) - highrate and high hits and low median
         """
+    
+        if riskname == "ANY":
+            return self.is_risk('HR')
+            return any([self.is_risk('HR'), self.is_risk('TITLE')])
+                
+
         if riskname == "HR":
             if self.check_high_hits() and self.check_high_ratings():
                 return True
             return False
+        elif riskname == "TITLE":
+            if self.count >= settings.sametitle_hit and self.check_high_ratings():
+                atitle = self.a.get_title().split(',')[0]
+                try:
+                    print("make bc", settings.sametitle_hit)
+                    bc = Company(self.b)
+                    print("loaded bc")
+                except AFNoCompany:
+                    # we canot make title check
+                    return False
+                btitle = bc.get_title().split(',')[0]
+                return atitle == btitle
+
         else:
             raise ValueError(f"Unknown risk type {riskname}")
 
     def is_dangerous(self, avg_arating=None, avg_brating=None, count=None, median=None):
         self.calc()
-        return self.is_risk()
+        return self.is_risk("ANY")
 
         # return _is_dangerous(self.avg_arating, self.avg_brating, self.count, self.median)
 
@@ -143,7 +162,7 @@ class Relation:
 class RelationDict:
 
     c: Company
-    relations: dict
+    relations: dict[Relation]
 
     meanmedian: float
     doublemedian: float
@@ -294,6 +313,7 @@ class RelationDict:
             data['median'] = rel.median
             data['arating'] = rel.avg_arating
             data['brating'] = rel.avg_brating
+            data['risk'] = rel.is_risk()
             rellist.append(data)
         return rellist
 
