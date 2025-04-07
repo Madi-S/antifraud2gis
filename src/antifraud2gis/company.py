@@ -266,7 +266,8 @@ class Company:
     def get_town(self):
         if self.address is None:
             return None
-        return self.address.split(',')[0]
+        return self.address.split(',')[0].replace(u'\xa0', u' ')
+
 
     def export(self):
         self.load_reviews()

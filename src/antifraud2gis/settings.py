@@ -22,6 +22,8 @@ class Settings():
         self.risk_empty_user_ratio = float(os.getenv('RISK_EMPTY_USER_TH', '30'))
         self.risk_user_ratio = float(os.getenv('RISK_USER_TH', '20'))
         self.risk_median_rpu = float(os.getenv('RISK_MEDIAN_RPU', '2'))
+        self.happy_long_rel_th = float(os.getenv('HAPPY_LONG_REL_TH', '10'))
+
 
         # 5 years old maximum 365*5=1825
         self.max_review_age = int(os.getenv('MAX_REVIEW_AGE', '1825'))

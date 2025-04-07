@@ -272,6 +272,9 @@ def detect(c: Company, cl: CompanyList, force=False):
         else:
             untr_c +=1
 
+
+    # check towns
+
     # print(f"{tr_c=}, {untr_c=}")
 
     """
@@ -287,7 +290,16 @@ def detect(c: Company, cl: CompanyList, force=False):
                 nrel_high_ratings += 1
                 nrel_high_hits += rel.count
     """
-    
+
+    towns = set()
+    hirel = 0
+    for rel in c.relations.relations.values():
+        if rel.check_high_hits():            
+            hirel += 1
+            if rel.check_high_ratings():
+                b = Company(rel.b)
+                towns.add(b.get_town())
+
 
     low_nrlist = list(filter(lambda x: x <= settings.risk_median_rpu, nrlist))
 
@@ -303,6 +315,9 @@ def detect(c: Company, cl: CompanyList, force=False):
     score['date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     score['param_fp'] = settings.param_fp()
     score['median_reviews_per_user'] = round(float(np.median(nrlist)), 1)
+
+    score['high_hit_relations'] = hirel
+    score['happy_long_rel'] = int(len(towns)*100/hirel) if hirel > 0 else 0
 
     # score['nrel_high_ratings'] = nrel_high_ratings
     # score['highrate_relations'] = int(100*nrel / nrel_high_ratings) if nrel_high_ratings > 0 else 0
@@ -328,6 +343,9 @@ def detect(c: Company, cl: CompanyList, force=False):
     elif score['median_reviews_per_user'] <= settings.risk_median_rpu:
         score['trusted'] = False
         score['reason'] = f"median_reviews_per_user {score['median_reviews_per_user']} <= {settings.risk_median_rpu} ({len(low_nrlist)} of {len(nrlist)} are <= {settings.risk_median_rpu})"
+    elif score['happy_long_rel'] >= settings.happy_long_rel_th:
+        score['trusted'] = False
+        score['reason'] = f"happy_long_rel {score['happy_long_rel']}% ({hirel} of {len(towns)})"
     else:
         score['trusted'] = True
 
