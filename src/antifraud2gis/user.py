@@ -173,3 +173,7 @@ def get_user(public_id: str) -> User:
         user_pool[public_id] = User(public_id)
         # print(f"new user {public_id}")
     return user_pool[public_id]
+
+def reset_user_pool():
+    global user_pool
+    user_pool = dict()

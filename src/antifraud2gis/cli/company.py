@@ -12,6 +12,7 @@ from ..tasks import fraud_task
 from ..exceptions import AFReportNotReady, AFNoCompany
 from ..settings import settings
 from .summary import printsummary
+from ..user import reset_user_pool
 from pathlib import Path
 
 stopfile = Path('.stop')
@@ -23,6 +24,7 @@ def add_company_parser(subparsers):
                                                 "reload", "report"])
     company_parser.add_argument("object_id", nargs='?', default=None)
     company_parser.add_argument("--show", "-s", type=int, default=settings.show_hit_th, help="override show_hit_th")
+    company_parser.add_argument("-n", type=int, help="Process only N companies and quit")
     company_parser.add_argument("--town", "-t", help="Process only companies in this town")
     company_parser.add_argument("args", nargs='*')
 
@@ -135,6 +137,7 @@ def handle_company(args: argparse.Namespace):
             return
 
     elif cmd == "fraudall":
+        processed = 0
         for idx, c in enumerate(cl.companies(town=args.town)):
             if c.error:
                 # print("skip error", c)
@@ -145,12 +148,17 @@ def handle_company(args: argparse.Namespace):
             print(c)
             detect(c, cl)
             dump_report(c.object_id)
+            processed += 1
             if idx % 10 == 0:
+                reset_user_pool()
                 printsummary(cl)
             if stopfile.exists():
                 print("Stopfile found, stopping")
                 stopfile.unlink()
                 break
+            if args.n and processed >= args.n:
+                print(f"reached limit {processed} >= {args.n}")
+                break            
 
 
 
