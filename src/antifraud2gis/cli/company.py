@@ -148,9 +148,9 @@ def handle_company(args: argparse.Namespace):
             print(c)
             detect(c, cl)
             dump_report(c.object_id)
+            reset_user_pool()
             processed += 1
             if idx % 10 == 0:
-                reset_user_pool()
                 printsummary(cl)
             if stopfile.exists():
                 print("Stopfile found, stopping")
