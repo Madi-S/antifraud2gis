@@ -297,9 +297,11 @@ def detect(c: Company, cl: CompanyList, force=False):
         if rel.check_high_hits():            
             hirel += 1
             if rel.check_high_ratings():
-                b = Company(rel.b)
+                b = Company(rel.b)                
                 towns.add(b.get_town())
+                print("qqq", b, b.get_town())
 
+    print(towns, hirel)
 
     low_nrlist = list(filter(lambda x: x <= settings.risk_median_rpu, nrlist))
 
@@ -317,6 +319,7 @@ def detect(c: Company, cl: CompanyList, force=False):
     score['median_reviews_per_user'] = round(float(np.median(nrlist)), 1)
 
     score['high_hit_relations'] = hirel
+    score['high_hit_towns'] = len(towns)
     score['happy_long_rel'] = int(len(towns)*100/hirel) if hirel > 0 else 0
 
     # score['nrel_high_ratings'] = nrel_high_ratings
@@ -343,7 +346,8 @@ def detect(c: Company, cl: CompanyList, force=False):
     elif score['median_reviews_per_user'] <= settings.risk_median_rpu:
         score['trusted'] = False
         score['reason'] = f"median_reviews_per_user {score['median_reviews_per_user']} <= {settings.risk_median_rpu} ({len(low_nrlist)} of {len(nrlist)} are <= {settings.risk_median_rpu})"
-    elif score['happy_long_rel'] >= settings.happy_long_rel_th:
+    elif len(towns) >= settings.happy_long_rel_min_towns_th \
+            and score['happy_long_rel'] >= settings.happy_long_rel_th:
         score['trusted'] = False
         score['reason'] = f"happy_long_rel {score['happy_long_rel']}% ({hirel} of {len(towns)})"
     else:
@@ -396,7 +400,7 @@ def dump_report(object_id: str):
         else:
             tags_cell = rel['tags']
 
-        if rel['hits'] > settings.risk_hit_th:
+        if rel['hits'] >= settings.risk_hit_th:
             hits_cell = Text(f"{rel['hits']}", style='red')
         else:
             hits_cell = Text(str(rel['hits']), style="green")
