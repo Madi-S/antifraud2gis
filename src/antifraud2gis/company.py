@@ -6,6 +6,7 @@ import gzip
 import traceback
 import numpy as np
 from rich.progress import Progress
+from requests.exceptions import RequestException
 
 from .settings import settings
 from .const import DATAFORMAT_VERSION, SLEEPTIME, WSS_THRESHOLD, LOAD_NREVIEWS, REVIEWS_KEY
@@ -195,7 +196,15 @@ class Company:
         page=0
         while url:
             logger.debug(f".. load reviews p{page} for {self}: {url}")
-            r = session.get(url)
+            r = None
+            while r is None:
+
+                try:
+                    r = session.get(url)
+                except RequestException as e:
+                    print("RequestException", e)
+                    time.sleep(1)
+            
             #print(r.status_code)
             #print(r)
             #print(r.text)
