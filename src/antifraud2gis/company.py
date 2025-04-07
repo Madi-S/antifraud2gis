@@ -287,6 +287,11 @@ class Company:
     def nreviews(self):
         return len(self._reviews)
 
+    def review_from(self, uid: str):
+        self.load_reviews()
+        for r in self._reviews:
+            if r['user']['public_id'] == uid:
+                return Review(r)
 
     def load_basic_from_network(self):
 

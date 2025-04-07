@@ -6,6 +6,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 import time
+import sys
 import datetime
 import numpy as np
 import gzip
@@ -79,22 +80,39 @@ def compare(a: Company, b: Company):
     reviews_for_user = list()
 
     ab = aset & bset
+    n_private = 0
+
     for uid in ab:
+        if db.is_private_profile(uid):
+            n_private += 1
+            continue
+
         u = User(uid)
         reviews_for_user.append(u.nreviews())
-        ar = u.review_for(a.object_id)
-        br = u.review_for(b.object_id)
+        #ar = u.review_for(a.object_id)
+        #br = u.review_for(b.object_id)
 
-        aratings.append(ar.rating)
-        bratings.append(br.rating)
+        # review could be missing either from user (if private) or company (if hit reviews limit)
+        ar = a.review_from(uid) or u.review_for(a.object_id)
+        br = b.review_from(uid) or u.review_for(b.object_id)
 
+        if ar is None or br is None:
+            print(f"ERROR: {u} {ar} {br}")            
+            sys.exit(1)
+
+        if ar:
+            aratings.append(ar.rating)
+        if br:
+            bratings.append(br.rating)
+
+        
         print(f"{u} a:{ar.rating} b:{br.rating}")
 
             
     aavg = round(float(np.mean(aratings)), 2)
     bavg = round(float(np.mean(bratings)), 2)
 
-    print(f"common: {len(ab)} users")
+    print(f"common: {len(ab)} users, private: {n_private}")
     print(f"reviews: {len(reviews_for_user)}")
     print(f"mean num reviews: {round(float(np.mean(reviews_for_user)), 2)} median: {round(float(np.median(reviews_for_user)),3)}")
     print(f"avg rating {a.get_title()}: {aavg} avg raging {b.get_title( )}: {bavg}")
@@ -256,6 +274,20 @@ def detect(c: Company, cl: CompanyList, force=False):
 
     # print(f"{tr_c=}, {untr_c=}")
 
+    """
+    nrel = 0
+    nhits = 0
+    nrel_high_ratings = 0
+    nrel_high_hits = 0
+    for rel in c.relations.relations.values():
+        nhits+= rel.count
+        if rel.check_high_hits():
+            nrel += 1
+            if rel.check_high_ratings():
+                nrel_high_ratings += 1
+                nrel_high_hits += rel.count
+    """
+    
 
     low_nrlist = list(filter(lambda x: x <= settings.risk_median_rpu, nrlist))
 
@@ -271,6 +303,11 @@ def detect(c: Company, cl: CompanyList, force=False):
     score['date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     score['param_fp'] = settings.param_fp()
     score['median_reviews_per_user'] = round(float(np.median(nrlist)), 1)
+
+    # score['nrel_high_ratings'] = nrel_high_ratings
+    # score['highrate_relations'] = int(100*nrel / nrel_high_ratings) if nrel_high_ratings > 0 else 0
+    # score['highrate_hits'] = int(nrel_high_hits / nrel) if nrel > 0 else 0
+
 
     if skipped_users_ratings:
         score['empty_user_avg_rate'] = round(float(np.mean(skipped_users_ratings)), 2)
@@ -311,6 +348,9 @@ def detect(c: Company, cl: CompanyList, force=False):
 def dump_report(object_id: str):
 
     c = Company(object_id)
+    if c.error:
+        print(f"ERROR for {c.get_title()} ({c.address}): {c.error}")
+        return
 
     try:
         print("read report from", c.report_path)

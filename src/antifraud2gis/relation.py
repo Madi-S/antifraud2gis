@@ -24,7 +24,7 @@ def _is_dangerous(avg_arating, avg_brating, count, median, debug=False):
         #if count >= settings.risk_highrate_hit_th and median <= settings.risk_highrate_median_th:
         #    return True
         # default check
-        if count >= settings.risk_hit_th and median <= settings.risk_median_th:            
+        if count >= settings.risk_hit_th: # and median <= settings.risk_median_th:           
             return True
     
     return False
@@ -40,8 +40,8 @@ class Relation:
     nusers: int
     mean: float
     median: float
-    avg_rating_a: float
-    avg_rating_b: float
+    avg_arating: float
+    avg_brating: float
 
     count: int
 
@@ -92,6 +92,12 @@ class Relation:
 
         self._calculated = True
 
+    def check_high_hits(self):
+        return self.count >= settings.risk_hit_th
+    
+    def check_high_ratings(self):
+        return min(self.avg_arating, self.avg_brating) >= settings.risk_highrate_th
+
     def inc(self):
         self.count += 1
     
@@ -100,10 +106,23 @@ class Relation:
             yield u
 
 
+    def is_risk(self, riskname = 'HR'):
+        """  risks: 
+        HR - highrate and high hits
+        HRLM (?) - highrate and high hits and low median
+        """
+        if riskname == "HR":
+            if self.check_high_hits() and self.check_high_ratings():
+                return True
+            return False
+        else:
+            raise ValueError(f"Unknown risk type {riskname}")
+
     def is_dangerous(self, avg_arating=None, avg_brating=None, count=None, median=None):
         self.calc()
-        
-        return _is_dangerous(self.avg_arating, self.avg_brating, self.count, self.median)
+        return self.is_risk()
+
+        # return _is_dangerous(self.avg_arating, self.avg_brating, self.count, self.median)
 
         # high-rate check
         if self.avg_arating >= settings.risk_highrate_th and self.avg_brating >= settings.risk_highrate_th:
@@ -135,7 +154,8 @@ class RelationDict:
     nreviews: int
     meanreviews: float
     medianreviews: float
-    dangerous_users: list[str]
+
+    dangerous_users: set
 
     
 
