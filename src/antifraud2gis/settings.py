@@ -8,11 +8,12 @@ class Settings():
         self.storage = Path(".af2gis-storage")
         self.user_storage = self.storage / "users"
         self.private_user_storage = self.storage / "users" / "_private.json"
-
         self.company_storage = self.storage / "companies"
 
+        self.deep_check = bool(int(os.getenv('DEEP_CHECK', '0')))
+
         self.risk_hit_th = int(os.getenv('RISK_HIT_TH', '10'))
-        self.sametitle_hit = self.risk_hit_th # int(os.getenv('SAMETITLE_HIT', '3'))
+        self.sametitle_hit = int(os.getenv('SAMETITLE_HIT', '3'))
 
         self.risk_median_th = int(os.getenv('RISK_MEDIAN_TH', '15'))
         self.show_hit_th = int(os.getenv('SHOW_HIT_TH', '1000'))
@@ -35,6 +36,7 @@ class Settings():
     def param_fp(self):
         return f"risk_hit={self.risk_hit_th} risk_median_th={self.risk_median_th} risk_highrate_th={self.risk_highrate_th} " \
             f"risk_empty_user_ratio={self.risk_empty_user_ratio} risk_user_ratio={self.risk_user_ratio} " \
-            f"happy_long_rel_th={self.happy_long_rel_th} mean_user_age={self.mean_user_age}"
+            f"happy_long_rel_th={self.happy_long_rel_th} mean_user_age={self.mean_user_age} " \
+            f"deep_check={self.deep_check}"
 
 settings = Settings()

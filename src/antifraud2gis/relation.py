@@ -113,8 +113,11 @@ class Relation:
         """
     
         if riskname == "ANY":
-            return self.is_risk('HR')
-            return any([self.is_risk('HR'), self.is_risk('TITLE')])
+            if settings.deep_check:                
+                return any([self.is_risk('HR'), self.is_risk('TITLE')])
+            else:
+                return self.is_risk('HR')
+            
                 
 
         if riskname == "HR":
@@ -125,9 +128,7 @@ class Relation:
             if self.count >= settings.sametitle_hit and self.check_high_ratings():
                 atitle = self.a.get_title().split(',')[0]
                 try:
-                    print("make bc", settings.sametitle_hit)
                     bc = Company(self.b)
-                    print("loaded bc")
                 except AFNoCompany:
                     # we canot make title check
                     return False
