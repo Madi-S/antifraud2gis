@@ -19,7 +19,7 @@ class Settings():
         # self.risk_highrate_hit_th = float(os.getenv('RISK_HIGHRATE_HIT_TH', '5'))
         # self.risk_highrate_median_th = float(os.getenv('RISK_HIGHRATE_MEDIAN_TH', '15'))
 
-        self.risk_empty_user_ratio = float(os.getenv('RISK_EMPTY_USER_TH', '20'))
+        self.risk_empty_user_ratio = float(os.getenv('RISK_EMPTY_USER_TH', '30'))
         self.risk_user_ratio = float(os.getenv('RISK_USER_TH', '20'))
         self.risk_median_rpu = float(os.getenv('RISK_MEDIAN_RPU', '2'))
 

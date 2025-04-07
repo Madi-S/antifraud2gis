@@ -132,7 +132,7 @@ def handle_company(args: argparse.Namespace):
             return
 
     elif cmd == "fraudall":
-        for c in cl.companies(town=args.town):
+        for idx, c in enumerate(cl.companies(town=args.town)):
             if c.error:
                 # print("skip error", c)
                 continue
@@ -142,7 +142,8 @@ def handle_company(args: argparse.Namespace):
             print(c)
             detect(c, cl)
             dump_report(c.object_id)
-            printsummary(cl)
+            if idx % 10 == 0:
+                printsummary(cl)
             if stopfile.exists():
                 print("Stopfile found, stopping")
                 stopfile.unlink()
