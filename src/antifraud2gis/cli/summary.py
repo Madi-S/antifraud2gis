@@ -18,12 +18,13 @@ from ..settings import settings
 def add_summary_parser(subparsers):
     sum_parser = subparsers.add_parser("summary", help="Operations with whole database")
     sum_parser.add_argument("cmd", nargs='?', choices=['summary', 'dump', 'table', 'recalc', 'search'])
-    sum_parser.add_argument("args", nargs=argparse.REMAINDER)
+    sum_parser.add_argument("-f", "--full", default=False, action='store_true')
+    sum_parser.add_argument("args", nargs='*')
 
     return sum_parser
 
 
-def printsummary(cl: CompanyList):
+def printsummary(cl: CompanyList, full=False):
 
     global last_summary
 
@@ -43,8 +44,9 @@ def printsummary(cl: CompanyList):
 
     logger.info(f"SUMMARY Companies: {total=}, {nerr=} {ncalc=} {nncalc=}")
     
-    user_reviews_count = sum(1 for p in userpath.iterdir() if p.is_file())
-    logger.info(f"SUMMARY Users with reviews: {user_reviews_count}")
+    if full:
+        user_reviews_count = sum(1 for p in userpath.iterdir() if p.is_file())
+        logger.info(f"SUMMARY Users with reviews: {user_reviews_count}")
     last_summary = time.time()
 
 
@@ -112,7 +114,7 @@ def handle_summary(args: argparse.Namespace):
             
     elif cmd == "summary":
         cl = CompanyList()
-        printsummary(cl)
+        printsummary(cl, args.full)
 
     elif cmd == "search":
         cl = CompanyList()
