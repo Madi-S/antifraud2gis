@@ -42,7 +42,6 @@ def handle_company(args: argparse.Namespace):
         except (KeyError, AssertionError):
             company = None
 
-
     if cmd == "export":            
         builtins.print(json.dumps(company.export(), indent=4, ensure_ascii=False))
 

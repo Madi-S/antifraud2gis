@@ -185,14 +185,13 @@ async def progress(request: Request, oid: str, task_id: str):
     task_data = r.get(f"dramatiq:message:{task_id}")
     print("TASK:", task_data)
 
-
-    # position = next((i for i, task in enumerate(tasks) if task_id in str(task)), None)
-
+    position = next((i for i, task in enumerate(tasks) if task_id in str(task)), None)
+    print("pos:", position)
 
     return templates.TemplateResponse(
         "progress.html", {
             "request": request, "title": c.title, "oid": c.object_id,
-            "qsize": queue_size
+            "qsize": queue_size, "position": position
         }
     )
 

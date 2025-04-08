@@ -403,6 +403,12 @@ def detect(c: Company, cl: CompanyList, force=False):
         # print("saved")
 
     c.save_basic()
+    if score['trusted']:
+        trust_line = "TRUSTED"
+    else:
+        trust_line = f"FRAUD {score['reason']}"
+
+    logger.info(f"{c} {trust_line}")
 
 
 

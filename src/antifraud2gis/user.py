@@ -65,7 +65,7 @@ class User:
                     except Exception as e:
                         print(f"Error loading user {self.public_id}: {e}")
                         time.sleep(5)
-                        
+
 
     def nreviews(self):
         self.load()
@@ -111,7 +111,7 @@ class User:
         page = 0
 
         while True:
-            logger.debug(f"Loading page {page} for user {self}")
+            # logger.debug(f"Loading page {page} for user {self}")
             time.sleep(SLEEPTIME)
             r = session.get(url)
             if r.status_code == 403:
@@ -140,7 +140,7 @@ class User:
             try:
                 token = data['next_page_token']                
             except KeyError:
-                logger.debug("no token in response")
+                # logger.debug("no token in response")
                 break
 
             # logger.debug(f"token: {token}")

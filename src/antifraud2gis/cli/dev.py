@@ -8,6 +8,7 @@ from ..user import User
 from ..settings import settings
 from ..fraud import detect, dump_report
 from ..exceptions import AFNoCompany
+from ..aliases import aliases
 
 from .summary import printsummary
 
@@ -32,97 +33,6 @@ def add_dev_parser(subparsers):
 
 
 def reinit(cl: CompanyList):
-    companies = {
-        '70000001094664808': {
-            'alias': 'manty',
-            'tags': 'x'
-        },
-        '70000001086696739': {
-            'alias': 'vostochnoe',
-            'tags': 'x'
-        },
-
-        '141266769572238': {
-            'alias': 'gcarenda',
-            'tags': 'x'
-        },
-
-        '70000001020949692': {
-            'alias': 'mario',
-            'tags': 'x'
-        },
-
-
-
-        '141265769369926': {
-            'alias': 'nskg',
-        },
-
-
-
-        '70000001023347049': {
-            'alias': 'madina',
-        },
-        '70000001029225378': {
-            'alias': 'gorodok',
-        },
-        '141265770941878': {
-            'alias': 'schulz',
-        },        
-
-
-        '141265769369691': {
-            'alias': 'rshb',
-        },        
-        '141265771980582': {
-            'alias': 'rshb2',
-        },        
-
-        '141265769366331': {
-            'alias': 'sber',
-        },        
-
-        '141265769882893': {
-            'alias': 'raif',
-        },       
-        
-        '70000001063580224': {
-            'alias': 'simsim',
-        },
-        '141265769360673': {
-            'alias': 'novat',
-        },
-        '141265770459396': {
-            'alias': 'aura',
-        },
-        '141265769338187': {
-            'alias': 'nskzoo',
-        },
-        '4504127908731515': {
-            'alias': 'mskzoo',
-        },
-        '985690699467625': {
-            'alias': 'roev',
-        },
-        '70000001080281737': {
-            'alias': 'tolmachevo',
-        },
-        '4504127908780545': {
-            'alias': 'domodedovo',
-        },
-        '4504127921282909': {
-            'alias': 'sheremetevo',
-        },
-
-        
-
-    }
-
-    companies2 = {
-        '70000001029225378': {
-            'alias': 'gorodok',
-        }
-    }
 
     for path in [ settings.storage, settings.company_storage, settings.user_storage]:
         if not path.exists():
@@ -138,7 +48,7 @@ def reinit(cl: CompanyList):
     print(f"deleted {deleted_reports} old reports")
 
 
-    for oid, data in companies.items():
+    for oid, data in aliases.items():
         c = Company(oid)
         c.load_basic_from_network()
         if 'alias' in data:

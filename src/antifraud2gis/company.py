@@ -6,6 +6,7 @@ import gzip
 import traceback
 import numpy as np
 from rich.progress import Progress
+from rich import print_json
 from requests.exceptions import RequestException
 
 from .settings import settings
@@ -14,6 +15,7 @@ from .user import User, get_user
 from .review import Review
 from .session import session
 from .exceptions import AFNoCompany
+from .aliases import aliases
 
 # to avoid circular import
 class RelationDict:
@@ -110,7 +112,8 @@ class Company:
                 self.frozen = _basic.get('frozen', False)
                 self.tags = _basic.get('tags', None)
                 if not self.title:
-                    logger.debug(f"no title for {self.object_id}")
+                    # logger.debug(f"no title for {self.object_id}")
+                    pass
                 return bool(self.title)
         else:
             logger.debug(f"no file on disk for {self.object_id}")
@@ -343,18 +346,18 @@ class CompanyList():
         self.path = path or settings.company_storage
     
     def __getitem__(self, index):
+
         basicpath = self.path / f'{index}-basic.json.gz'
         if basicpath.exists():
-            logger.debug(f"Found company {index} by ID")
+            # logger.debug(f"Found company {index} by ID")
             return Company(index)
         
         # not found, try by alias
-        for c in self.companies():
-            if c.alias is None:
-                continue
-            if c.alias == index:
+        print("TRY BY ALIAS")
+        for oid, rec in aliases.items():
+            if rec.get('alias') == index:
                 logger.debug(f"Found company {index} by alias")
-                return c
+                return Company(oid)
         raise KeyError(f"Company {index} not found")
 
 
