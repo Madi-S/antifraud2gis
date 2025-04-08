@@ -72,6 +72,7 @@ document.getElementById('search-form').addEventListener('submit', function(e) {
     `;
 });
 
+
 // Обработка кликов по ссылкам компаний
 document.querySelectorAll('.company-link').forEach(link => {
     link.addEventListener('click', function(e) {
@@ -80,6 +81,7 @@ document.querySelectorAll('.company-link').forEach(link => {
         document.getElementById('search-form').dispatchEvent(new Event('submit'));
     });
 });
+
 
 
 function drawRecent(){
@@ -103,7 +105,8 @@ function drawRecent(){
                 `;
     
                 companyDiv.addEventListener("click", () => {
-                    oidInput.value = company.oid;
+                    // oidInput.value = company.oid;
+                    window.location.href = `/report/${company.oid}`;
                 });
     
                 trustedDiv.appendChild(companyDiv);
@@ -113,4 +116,22 @@ function drawRecent(){
         .catch(error => console.error("Error:", error));
 }
 
-drawRecent()
+
+function make_auto_refresh(){
+    // if auto_refresh_btn exists, autorefresh every 10s
+    const auto_refresh_btn = document.getElementById("auto_refresh_btn");
+    if(auto_refresh_btn){
+
+        setInterval(function(){
+            window.location.reload();
+        }, 10000);        
+    }
+
+}
+
+function main(){
+    drawRecent()
+    make_auto_refresh()
+}
+
+main()

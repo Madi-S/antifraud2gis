@@ -185,7 +185,7 @@ class Company:
                     # print("skip: no public_id", r['user']['name'])
                     continue
 
-                logger.debug(f"Loading user {r['user']['name']} {upid} ({idx+1}/{len(self._reviews)})")
+                # logger.debug(f"Loading user {r['user']['name']} {upid} ({idx+1}/{len(self._reviews)})")
                 user = get_user(upid)
                 user.load()
 
@@ -317,7 +317,7 @@ class Company:
                 # print("skip: no public_id", r['user']['name'])
                 continue
 
-            logger.debug(f"Loading user {r['user']['name']} {upid} ({idx+1}/{len(self._reviews)})")
+            # logger.debug(f"Loading user {r['user']['name']} {upid} ({idx+1}/{len(self._reviews)})")
             user = get_user(upid)
             user.load()
             ci = user.get_company_info(self.object_id)

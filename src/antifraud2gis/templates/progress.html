@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Результаты статистического анализа для {{title}}</title>
+    <title>Progress for {{title}}</title>
     <link href="/static/styles.css" rel="stylesheet">
 </head>
 <body>
-    <h1>Результаты статистического анализа для {{title}}</h1>
-    
+    <h1>{{title}}</h1>
     <div class="search-container">
         <form class="search-form" id="search-form">
             <input type="text" id="oid" placeholder="Введите название компании" required>
@@ -16,68 +15,9 @@
         </form>
     </div>
     
-    <div class="result-container" id="result-container">
-        {'tags': None, 'title': 'Harucha, Точки безалкогольных напитков', 'town': 'Новосибирск', 'alias': None, 'oid': '70000001080364339', 
-        'hits': 16, 'median': 7, 'arating': 4.5, 'brating': 5.0}
-        {% if score.trusted %}
-        <div class="trusted-companies">
-        {% else %}
-        <div class="suspicious-companies">
-        {% endif %}
-            <h2>{{c.title}}</h2>
-            <h3>{{c.address}}</h3>
-            {% if score.trusted %}
-            <span class="error">Аномалий в отзывах не обнаружено</span>
-            {% else %}
-            <span class="error">Аномалия: {{score.reason}}</span>
-            {% endif %}
-
-            {% if relations%}
-            <table>
-                <thead>
-                    <th>Компания</th>
-                    <th>Город</th>
-                    <th>hits</th>
-                    <th>median</th>
-                    <th>ratings</th>
-                </thead>
-                <tbody>
-                    
-                    {% for rel in relations %}
-
-                        <tr {% if rel.risk %}class="risk"{% endif%}>
-                            <td><a href="/report/{{rel.oid}}">{{rel.title}}</td>
-                            <td>{{rel.town}}</td>
-                            <td>{{rel.hits}}</td>
-                            <td>{{rel.median}}</td>
-                            <td>{{rel.arating | round(1)}} {{rel.brating | round(1)}}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {%else%}
-            <div>
-                <b>Нет значимых связей</b>
-            </div>
-                {%endif%}
-
-            <div>
-                <details>
-                    <summary>
-                    Score details
-                    </summary>
-                    <div>
-                        {% for key, value in score.items() %}
-                            {{key}}: {{value}}<br>
-                        {% endfor%}    
-                    </div>
-                </details>              
-            </div>
-        </div>
-
-    </div>
-
-    <div id="result">
+    <div id="actionbox">
+        Обрабатывается
+        <button id="auto_refresh_btn" onclick="window.location.reload()">Обновить вручную</button>
     </div>
     
     <div class="company-lists">

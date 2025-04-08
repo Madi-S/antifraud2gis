@@ -396,8 +396,11 @@ def detect(c: Company, cl: CompanyList, force=False):
     report['score'] = score
     report['relations'] = c.relations.export()
 
+    # print(f"save {len(report['relations'])} relations to {c.report_path}")
+
     with gzip.open(c.report_path, "wt") as fh:
         json.dump(report, fh)
+        # print("saved")
 
     c.save_basic()
 

@@ -57,7 +57,15 @@ class User:
                     sys.exit(1)
         else:
             if local_only is False:
-                self.load_from_network()
+                loaded = False
+                while not loaded:
+                    try:
+                        self.load_from_network()
+                        loaded = True
+                    except Exception as e:
+                        print(f"Error loading user {self.public_id}: {e}")
+                        time.sleep(5)
+                        
 
     def nreviews(self):
         self.load()
@@ -90,7 +98,7 @@ class User:
 
     def load_from_network(self):
         if db.is_private_profile(self.public_id):
-            logger.debug("skip: private profile from shelf", self.public_id)
+            # logger.debug("skip: private profile from shelf", self.public_id)
             return
 
         # print(f"  # load (network) reviews for user {self.public_id}")

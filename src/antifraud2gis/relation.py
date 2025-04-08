@@ -1,6 +1,7 @@
 from .company import Company
 from .settings import settings
 from .exceptions import AFNoCompany
+from .logger import logger
 import os
 import numpy as np
 
@@ -295,10 +296,11 @@ class RelationDict:
 
         for rel in sorted(self.relations.values(), key=lambda x: x.count, reverse=True):
             rel.calc()
-
             # hide if not dangerous and low count
-            if not rel.is_dangerous() and rel.count < settings.show_hit_th:
+            if rel.count < min(settings.show_hit_th, settings.risk_hit_th):
                 continue
+
+
             try:
                 _c = Company(rel.b)
             except AFNoCompany:

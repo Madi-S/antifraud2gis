@@ -183,13 +183,36 @@ a:hover {
     background-color: #ddd;  /* Slightly darker than white */
 }
 
+
+/* Zebra striping with subtle grey shades */
+#result-container tbody tr.risk:nth-child(odd) {
+    background-color: #f00;
+    color: forestgreen;
+}
+
+#result-container tbody tr.risk:nth-child(even) {
+    background-color: #f44;
+    color: white;
+}
+
+
 #result-container tbody tr:hover {
-    background-color: #bbb;  /* Light blue-grey on hover */
+    background-color: #444;  /* Light blue-grey on hover */
+    color: #0f0;
 }
 
 #result-container tbody tr:last-child td {
     border-bottom: none;
 }
+
+#result-container tbody tr.risk a {
+    text-decoration: none;
+    color: white;
+}
+#result-container tbody tr a {
+    text-decoration: none;    
+}
+
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
@@ -201,3 +224,13 @@ a:hover {
         padding: 0.75rem 1rem;
     }
 }
+
+#actionbox {
+    text-align: center;
+}
+
+#actionbox button {
+    display: block;     
+    margin: 10px auto 0;
+  }
+  

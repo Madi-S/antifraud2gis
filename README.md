@@ -25,3 +25,8 @@ jq -s '.[] | select(.score.WSS > 0.5)' /tmp/export.jsonl
 
 
 ~~~
+
+## Start worker (for web app)
+~~~
+af2worker antifraud2gis.tasks -p1 -t1
+~~~
