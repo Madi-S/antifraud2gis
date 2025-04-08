@@ -406,9 +406,9 @@ def detect(c: Company, cl: CompanyList, force=False):
     if score['trusted']:
         trust_line = "TRUSTED"
     else:
-        trust_line = f"FRAUD {score['reason']}"
+        trust_line = f"RISK {score['reason']}"
 
-    logger.info(f"{c} {trust_line}")
+    logger.info(f"DETECTION RESULT {c} {trust_line}")
 
 
 
