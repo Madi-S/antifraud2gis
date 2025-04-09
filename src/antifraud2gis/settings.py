@@ -33,6 +33,8 @@ class Settings():
 
         self.mean_user_age = int(os.getenv('MEAN_USER_AGE', '365'))
 
+        self.proxy = os.getenv('HTTPS_PROXY', None)
+
     def param_fp(self):
         return f"risk_hit={self.risk_hit_th} risk_median_th={self.risk_median_th} risk_highrate_th={self.risk_highrate_th} " \
             f"risk_empty_user_ratio={self.risk_empty_user_ratio} risk_user_ratio={self.risk_user_ratio} " \

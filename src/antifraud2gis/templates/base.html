@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+    <link href="/static/styles.css" rel="stylesheet">
+</head>
+<body>
+    <h1>{% block header %}{% endblock %}</h1>
+    
+    <div class="search-container">
+        <form class="search-form" id="search-form" method="POST" action="/search">
+            <input type="text" id="oid" name="query" placeholder="Введите название компании" required>
+            <button type="submit">Найти</button>
+        </form>
+    </div>
+    
+
+    {% block content %}{% endblock %}
+
+    <div class="company-lists">
+        <div class="company-list trusted-companies" id="trusted">
+            <h2>Проверенные компании</h2>
+            {% for company in trusted %}
+                <a href="/report/{{company.oid}}">
+                    <div class="company">
+                        <div class="company-title">
+                            {{company.title}}
+                            <span class="company-tag trusted-tag">Проверено</span>
+                            </div>
+                        <div class="company-address">{{company.address}}</div>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+        
+        <div class="company-list suspicious-companies">
+            <h2>Подозрительные компании</h2>
+            {% for company in untrusted %}
+                <a href="/report/{{company.oid}}">
+                    <div class="company">
+                        <div class="company-title">
+                            {{company.title}}
+                            <span class="company-tag suspicious-tag">Подозрительная</span>
+                            </div>
+                        <div class="company-address">{{company.address}}</div>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script src="/static/js/app.js">
+    </script>
+</body>
+</html>

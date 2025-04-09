@@ -29,20 +29,33 @@ app.mount("/static", StaticFiles(directory=static_path), name="static")
 
 dqname="dramatiq:default"
 
+r = redis.Redis(decode_responses=True)
+
 
 class ReportRequest(BaseModel):
     oid: str
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
+
+
+    last_trusted = [json.loads(item) for item in r.lrange('af2gis:last_trusted', 0, -1)]
+    last_untrusted = [json.loads(item) for item in r.lrange('af2gis:last_untrusted', 0, -1)]
+
     return templates.TemplateResponse(
         "index.html",
-        {"request": request}  # FastAPI templates always need the request object
+        {
+            "request": request,
+            "trusted": last_trusted,
+            "untrusted": last_untrusted
+            } 
     )
 
 
+
+
 @app.get("/recent")
-async def report(request: Request):
+async def recent(request: Request):
     data = {
         "trusted": [
             {
@@ -116,13 +129,20 @@ async def report(request: Request, oid: str):
             # print_json(data=report)
             # print(report['relations'][0])
 
+            last_trusted = [json.loads(item) for item in r.lrange('af2gis:last_trusted', 0, -1)]
+            last_untrusted = [json.loads(item) for item in r.lrange('af2gis:last_untrusted', 0, -1)]
+
+
             return templates.TemplateResponse(
                 "report.html", {
                     "request": request, 
                     "c": c,
                     "title": c.title,
                     "score": report['score'],
-                    "relations": report['relations']}
+                    "relations": report['relations'],
+                    "trusted": last_trusted,
+                    "untrusted": last_untrusted
+                    }
             )
 
             return report
@@ -135,19 +155,30 @@ async def report(request: Request, oid: str):
 
 @app.get("/miss/{oid}", response_class=HTMLResponse)
 async def miss(request: Request, oid: str):
+
+    last_trusted = [json.loads(item) for item in r.lrange('af2gis:last_trusted', 0, -1)]
+    last_untrusted = [json.loads(item) for item in r.lrange('af2gis:last_untrusted', 0, -1)]
+
     try:
         c = Company(oid)
         print("miss for", c)
+
     except (AFNoCompany, AssertionError):
         return templates.TemplateResponse(
             "nocompany.html", {
                 "request": request, "oid": oid,
+                "trusted": last_trusted,
+                "untrusted": last_untrusted
             }
         )
 
+
+
     return templates.TemplateResponse(
         "miss.html", {
-            "request": request, "title": c.title, "oid": c.object_id
+            "request": request, "title": c.title, "oid": c.object_id,   
+            "trusted": last_trusted,
+            "untrusted": last_untrusted
         }
     )
 
@@ -156,8 +187,17 @@ async def miss(request: Request, oid: str):
 async def submit(request: Request, oid: str = Form(...)):
     print("submit", oid)
     task_id = fraud_task.send(oid).message_id
-    print("task_id", task_id)
+    print("submit task_id", task_id)
+    task_data = r.get(f"dramatiq:message:{task_id}")
+    print("submit task data", task_data)  # Shows serialized task details
+
     return RedirectResponse(request.url_for("progress", oid=oid, task_id=task_id), status_code=303)
+
+
+@app.post("/search", response_class=HTMLResponse)
+async def search(request: Request, query: str = Form(...)):
+    print("search", query)
+    return RedirectResponse(request.url_for("report", oid=query), status_code=303)
 
 
 @app.get("/progress/{oid}/{task_id}", response_class=HTMLResponse)
@@ -175,12 +215,13 @@ async def progress(request: Request, oid: str, task_id: str):
     if c.report_path.exists():
         return RedirectResponse(request.url_for("report", oid=oid))
 
-    r = redis.Redis()
     queue_size = r.llen(dqname)    
     print(f"Queue size: {queue_size}")
     
+    wstatus = r.get('af2gis:worker_status')
     tasks = r.lrange(dqname, 0, -1)
-    print(tasks)
+
+    print("tasks:", tasks)
     
     task_data = r.get(f"dramatiq:message:{task_id}")
     print("TASK:", task_data)
@@ -188,10 +229,16 @@ async def progress(request: Request, oid: str, task_id: str):
     position = next((i for i, task in enumerate(tasks) if task_id in str(task)), None)
     print("pos:", position)
 
+    last_trusted = [json.loads(item) for item in r.lrange('af2gis:last_trusted', 0, -1)]
+    last_untrusted = [json.loads(item) for item in r.lrange('af2gis:last_untrusted', 0, -1)]
+
+
     return templates.TemplateResponse(
         "progress.html", {
             "request": request, "title": c.title, "oid": c.object_id,
-            "qsize": queue_size, "position": position
+            "qsize": queue_size, "position": position, "wstatus": wstatus,
+            "trusted": last_trusted,
+            "untrusted": last_untrusted
         }
     )
 

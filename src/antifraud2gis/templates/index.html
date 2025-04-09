@@ -1,66 +1,11 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Геоинформационная система - Поиск компаний</title>
-    <link href="/static/styles.css" rel="stylesheet">
-</head>
-<body>
-    <h1>Геоинформационная система - Поиск компаний</h1>
-    
-    <div class="search-container">
-        <form class="search-form" id="search-form">
-            <input type="text" id="oid" placeholder="Введите название компании" required>
-            <button type="submit">Найти</button>
-        </form>
-    </div>
-    
-    <div class="result-container" id="result-container">
-        <!-- Здесь будут отображаться результаты поиска -->
-        <p>Результаты поиска будут отображены здесь.</p>
-    </div>
+{% extends 'base.html' %}
+
+{% block title %}2GIS antifraud{% endblock %}
+{% block header %}2GIS antifraud{% endblock %}
+
+
+{% block content %}
 
     <div id="result">
     </div>
-    
-    <div class="company-lists">
-        <div class="company-list trusted-companies" id="trusted">
-            <h2>Trusted</h2>
-        </div>
-        
-        <div class="company-list suspicious-companies">
-            <h2>Untrusted</h2>
-        </div>
-    </div>
-
-
-
-    <div class="company-lists">
-        <div class="company-list trusted-companies">
-            <h2>Проверенные компании</h2>
-            <ul>
-                <li><a href="#" class="company-link">ООО "ГеоСтройПроект" <span class="company-tag trusted-tag">Проверено</span></a></li>
-                <li><a href="#" class="company-link">АО "ТрансГеоТех" <span class="company-tag trusted-tag">Проверено</span></a></li>
-                <li><a href="#" class="company-link">ЗАО "ГеоИнвест" <span class="company-tag trusted-tag">Проверено</span></a></li>
-                <li><a href="#" class="company-link">ООО "ЭкоГеоСервис" <span class="company-tag trusted-tag">Проверено</span></a></li>
-                <li><a href="#" class="company-link">НПО "ГеоАналитика" <span class="company-tag trusted-tag">Проверено</span></a></li>
-            </ul>
-        </div>
-        
-        <div class="company-list suspicious-companies">
-            <h2>Подозрительные компании</h2>
-            <ul>
-                <li><a href="#" class="company-link">ООО "ГеоМираж" <span class="company-tag suspicious-tag">Подозрительная</span></a></li>
-                <li><a href="#" class="company-link">АО "БыстрыйГеоСервис" <span class="company-tag suspicious-tag">Подозрительная</span></a></li>
-                <li><a href="#" class="company-link">ЗАО "ГеоФастГрупп" <span class="company-tag suspicious-tag">Подозрительная</span></a></li>
-                <li><a href="#" class="company-link">ООО "ГеоЭкспресс" <span class="company-tag suspicious-tag">Подозрительная</span></a></li>
-                <li><a href="#" class="company-link">НПО "ГеоТехнологии" <span class="company-tag suspicious-tag">Подозрительная</span></a></li>
-            </ul>
-        </div>
-    </div>
-
-    <script src="/static/js/app.js">
-    </script>
-</body>
-</html>
+{% endblock %}

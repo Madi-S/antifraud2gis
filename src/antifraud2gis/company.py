@@ -353,7 +353,6 @@ class CompanyList():
             return Company(index)
         
         # not found, try by alias
-        print("TRY BY ALIAS")
         for oid, rec in aliases.items():
             if rec.get('alias') == index:
                 logger.debug(f"Found company {index} by alias")

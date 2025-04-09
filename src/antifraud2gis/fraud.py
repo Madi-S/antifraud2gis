@@ -152,7 +152,10 @@ def detect(c: Company, cl: CompanyList, force=False):
 
     if c.report_path.exists() and not force:
         print(f"SKIP because exists {c.report_path}")
-        return
+        # read 
+        with gzip.open(c.report_path, "rt", encoding="utf-8") as f:
+            result = json.load(f)  # Directly parse JSON
+        return result['score']
 
     c.relations = RelationDict(c)
 
@@ -385,7 +388,7 @@ def detect(c: Company, cl: CompanyList, force=False):
         score['reason'] = f"happy_long_rel {score['happy_long_rel']}% ({hirel} of {len(towns)})"
     elif score['mean_user_age'] <= settings.mean_user_age:
         score['trusted'] = False
-        score['reason'] = f"mean_user_age {score['mean_user_age']} >= {settings.mean_user_age}"    
+        score['reason'] = f"mean_user_age {score['mean_user_age']} <= {settings.mean_user_age}"    
     else:
         score['trusted'] = True
 
@@ -409,7 +412,7 @@ def detect(c: Company, cl: CompanyList, force=False):
         trust_line = f"RISK {score['reason']}"
 
     logger.info(f"DETECTION RESULT {c} {trust_line}")
-
+    return score
 
 
 def dump_report(object_id: str):

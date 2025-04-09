@@ -18,7 +18,15 @@ aliases = {
         'tags': 'x'
     },
 
+    '4363390420001056': {
+        'alias': 'limpopo',
+        'tags': 'x'
+    },
 
+    '70000001034207247': {
+        'alias': 'crystal',
+        'tags': 'x'
+    },
 
     '141265769369926': {
         'alias': 'nskg',

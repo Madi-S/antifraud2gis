@@ -71,6 +71,13 @@ button:hover {
     border-radius: 8px;
 }
 
+.company-list a { color: #333333; text-decoration: none;}
+.company-list a:visited { color: #333333; }    
+.company-list a:hover { color:#333333; }    
+.company-list a:active { color: #333333; } 
+
+
+
 .trusted-companies {
     background-color: #e8f5e9;
     border: 1px solid #a5d6a7;
@@ -98,21 +105,14 @@ li {
     padding: 8px 0;
 }
 
-a {
-    color: #3498db;
-    text-decoration: none;
-}
-
-a:hover {
-    text-decoration: underline;
-}
 
 .company-tag {
     display: inline-block;
     padding: 2px 6px;
     border-radius: 4px;
-    font-size: 12px;
+    font-size: 0.5em;
     margin-left: 8px;
+    margin-right: 8px;
 }
 
 .trusted-tag {
@@ -125,11 +125,15 @@ a:hover {
     color: #b71c1c;
 }
 
-#trusted { font-family: Arial, sans-serif; }
-.company { margin-bottom: 10px; cursor: pointer; }
-.company-title { font-weight: bold; }
-.company-address { font-size: 0.9em; color: gray; }
+#trusted { 
+    font-family: Arial, sans-serif; }
 
+
+
+
+.company { margin-bottom: 10px; cursor: pointer; }
+.company-title { font-size: 1.0em; font-weight: bold; }
+.company-address { font-size: 0.9em; color: gray;  }
 
 /* Result div, table */
 /* Modern Table Design */

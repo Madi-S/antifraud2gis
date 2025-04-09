@@ -1,4 +1,7 @@
-document.getElementById('search-form').addEventListener('submit', function(e) {
+
+
+
+document.getElementById('search-formQQQ').addEventListener('submit', function(e) {
     e.preventDefault();
     const OID = document.getElementById('oid').value;
     const resultContainer = document.getElementById('result-container');
@@ -90,7 +93,7 @@ function drawRecent(){
     })
         .then(response => response.json())
         .then(data => {
-            const trustedDiv = document.getElementById("trusted");
+            const trustedDiv = document.getElementById("trusted2");
             const oidInput = document.getElementById("oid");
 
             data.trusted.forEach(company => {
