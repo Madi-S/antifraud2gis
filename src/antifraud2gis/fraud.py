@@ -230,7 +230,9 @@ def detect(c: Company, cl: CompanyList, force=False):
                     # print(f"Skip user {u} with {u.nreviews()} reviews")
                     continue
 
-                user_ages.append((cr.created - u.birthday()).days)
+
+                if cr.rating >= settings.risk_highrate_th:
+                    user_ages.append((cr.created - u.birthday()).days)
 
                 # only for open profiles
                 for r in u.reviews():
