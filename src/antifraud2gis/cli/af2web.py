@@ -57,7 +57,7 @@ async def report(request: Request, oid: str):
     try:
         c = Company(oid)
     except AFNoCompany:
-        return RedirectResponse(request.url_for("miss", oid=oid))
+        return RedirectResponse(app.url_path_for("miss", oid=oid))
         # raise HTTPException(status_code=404, detail="Company not found")
 
     try:
@@ -94,7 +94,7 @@ async def report(request: Request, oid: str):
 
     except FileNotFoundError:
         # return 
-        return RedirectResponse(request.url_for("miss", oid=oid))
+        return RedirectResponse(app.url_path_for("miss", oid=oid))
         # raise HTTPException(status_code=404, detail="Report not found")
 
     return "OK"
@@ -131,16 +131,15 @@ async def miss(request: Request, oid: str):
 @app.post("/submit", response_class=HTMLResponse)
 async def submit(request: Request, oid: str = Form(...)):
     fraud_task.send(oid)
-
     r.rpush('af2gis:queue', oid)
 
-    return RedirectResponse(request.url_for("progress", oid=oid), status_code=303)
+    return RedirectResponse(app.url_path_for("progress", oid=oid), status_code=303)
 
 
 @app.post("/search", response_class=HTMLResponse)
 async def search(request: Request, query: str = Form(...)):
     print("search", query)
-    return RedirectResponse(request.url_for("report", oid=query), status_code=303)
+    return RedirectResponse(app.url_path_for("report", oid=query), status_code=303)
 
 
 @app.get("/progress/{oid}", response_class=HTMLResponse)
@@ -156,17 +155,14 @@ async def progress(request: Request, oid: str):
         )
 
     if c.report_path.exists():
-        return RedirectResponse(request.url_for("report", oid=oid))
+        return RedirectResponse(app.url_path_for("report", oid=oid))
 
     wstatus = r.get(REDIS_WORKER_STATUS)
     tasks = r.lrange(REDIS_TASK_QUEUE_NAME, 0, -1)  # возвращает list of bytes    
-    print("tasks:", tasks)
     queue_size = len(tasks)
     try:
         qpos = tasks.index(oid) + 1
-        print(f"Position: {qpos}")
     except ValueError:
-        print("Not found")
         qpos=None
     
 
