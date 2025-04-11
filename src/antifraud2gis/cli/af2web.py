@@ -107,8 +107,9 @@ async def miss(request: Request, oid: str):
 
     try:
         c = Company(oid)
+        assert c.title is not None
 
-    except (AFNoCompany, AssertionError):
+    except (AFNoCompany, AssertionError) as e:
         return templates.TemplateResponse(
             "nocompany.html", {
                 "request": request, "oid": oid,
@@ -116,6 +117,7 @@ async def miss(request: Request, oid: str):
                 "untrusted": last_untrusted
             }
         )
+        
 
 
 
