@@ -54,6 +54,8 @@ def fraud_task(oid: str):
     res = {
         'oid': oid,
         'title': c.title,
+        'rating': c.branch_rating_2gis,
+        'score': score.get('score'),
         'address': c.address,
         'trusted': score.get('trusted')
     }
