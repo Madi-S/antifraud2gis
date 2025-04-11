@@ -11,12 +11,14 @@ from argalias import ArgAlias
 from rich import print_json, print
 from rich.console import Console
 from rich.table import Table
+import redis
 
 from pathlib import Path
 
 from ..company import Company, CompanyList
 from ..user import User
 from ..fraud import detect, compare, dump_report
+from ..tasks import fraud_task
 from ..logger import loginit, logger, testlogger
 from ..db import db
 from ..const import SUMMARY_PERIOD
@@ -81,7 +83,7 @@ def UNUSED_get_args():
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("cmd", choices=['list','stop','summary', 'fraud', 'delreport', 'wipe'])
+    parser.add_argument("cmd", choices=['list','stop','summary', 'fraud', 'submitfraud', 'delreport', 'wipe'])
     parser.add_argument("-v", "--verbose", default=False, action='store_true')
     parser.add_argument("--sleep", type=float, default=None, help='sleep N.M seconds after each processed company')
     parser.add_argument("--fmt", "-f", default="normal", choices=['brief', 'normal', 'full'])
@@ -107,6 +109,8 @@ def main():
     #print(args)
 
     stopfile = Path('.stop')
+    
+    r = redis.Redis(decode_responses=True)
 
     cl = CompanyList()
 
@@ -123,10 +127,10 @@ def main():
         else:
             printsummary(cl=cl, full=False)
 
-    elif args.cmd in ["list", "fraud", "delreport", "wipe"]:
+    elif args.cmd in ["list", "fraud", "delreport", "wipe", "submitfraud"]:
 
         # if company is given, create it first (if it's missing)
-        if args.company and args.cmd not in ['wipe']:
+        if args.company and args.cmd not in ['wipe', 'submitfraud']:
             Company(args.company)
         
         # PRE PROCESSING
@@ -151,7 +155,6 @@ def main():
                     print(c)
 
             elif args.cmd == "fraud":
-                print("FF", c)
 
                 if args.show:
                     settings.show_hit_th = args.show
@@ -161,6 +164,12 @@ def main():
                     dump_report(c.object_id)
                 except AFReportAlreadyExists as e:
                     print(f"Report already exists for {c}")
+
+            elif args.cmd == "submitfraud":
+                print(f"Submit fraud report request for {c}")
+                fraud_task.send(args.company)
+                r.rpush('af2gis:queue', args.company)
+
 
             elif args.cmd == "delreport":                
                 print(f"Delete report for {c}")
