@@ -344,11 +344,6 @@ def detect(c: Company, cl: CompanyList, force=False):
     score['happy_long_rel'] = int(100*len(towns)/hirel) if hirel > 0 else 0
     score['sametitle_rel'] = int(100*len(titles)/hirel) if hirel > 0 else 0
 
-    print(titles)
-    print(f"{len(titles)} titles, hirel: {hirel}")
-    print(score['sametitle_rel'])
-        
-
     score['mean_user_age'] = int(np.median(user_ages)) if user_ages else None
     
 
@@ -362,9 +357,6 @@ def detect(c: Company, cl: CompanyList, force=False):
 
     # c.score['full_rate'] = c.count_rate()
     # c.score['trusted_rate'] = round(float(np.mean(trusted_ratings)),2)
-
-    print(hirel >= settings.sametitle_rel and score['sametitle_rel'] >= settings.sametitle_ratio)
-    print(hirel, settings.sametitle_rel, score['sametitle_rel'], settings.sametitle_ratio)
 
     # make verdict
     if score['empty_user_ratio'] > settings.risk_empty_user_ratio:
