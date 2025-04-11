@@ -2,6 +2,7 @@ from .company import Company
 from .settings import settings
 from .exceptions import AFNoCompany
 from .logger import logger
+from .review import Review
 import os
 import numpy as np
 
@@ -43,6 +44,8 @@ class Relation:
     median: float
     avg_arating: float
     avg_brating: float
+    btitle: str
+    baddr: str
 
     count: int
 
@@ -59,6 +62,8 @@ class Relation:
         self.median = None
         self.avg_arating = None
         self.avg_brating = None
+        self.btitle = None
+        self.baddr = None
 
     def add_user(self, user, a_rating, b_rating):
         global users_added
@@ -88,8 +93,8 @@ class Relation:
 
         self.mean = round(float(np.mean(user_reviews)), 3)
         self.median = int(np.median(user_reviews))
-        self.avg_arating = round(float(np.mean(self._aratings)), 3)
-        self.avg_brating = round(float(np.mean(self._bratings)), 3)
+        self.avg_arating = round(float(np.mean(self._aratings)), 1)
+        self.avg_brating = round(float(np.mean(self._bratings)), 1)
 
         self._calculated = True
 
@@ -154,12 +159,33 @@ class Relation:
         if self.count >= settings.risk_hit_th and self.median <= settings.risk_median_th:
             return True
         return False
-    
+
+    def get_btown(self):
+        if self.baddr is None:
+            return None
+        return self.baddr.split(',')[0].replace(u'\xa0', u' ')
+
+    def get_btitle(self):
+        if self.btitle is None:
+            return None
+        return self.btitle.split(',')[0]
+
     def __repr__(self):
         if not self._calculated:
             self.calc()
         bcompany = Company(self.b)
         return f"{bcompany.get_title()} ({bcompany.address}): hits: {len(self._users)}/{self.count} mean: {self.mean} median: {self.median})"
+
+    def hit(self, arating: int, r: Review):
+        """ add review to relation """
+        self.inc()
+        self.add_user(r.user, arating, r.rating)
+
+        if self.btitle is None:
+            self.btitle = r.title
+            self.baddr = r.address
+            # print(f'hit rel to {self.b} {self.btitle} ({self.baddr})')
+
 
 class RelationDict:
 

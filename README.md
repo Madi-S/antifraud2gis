@@ -23,6 +23,8 @@ jq -s 'map(.score.WSS) | add / length' /tmp/export.jsonl
 jq -s 'map(select(.score.WSS > 0.5))' /tmp/export.jsonl
 jq -s '.[] | select(.score.WSS > 0.5)' /tmp/export.jsonl
 
+# raw files
+zcat .af2gis-storage/companies/nnnnnn-reviews.json.gz | jq 'length'
 
 ~~~
 

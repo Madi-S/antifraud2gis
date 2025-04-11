@@ -8,23 +8,40 @@
 {% block content %}
 
 
-    <div class="result-container" id="result-container">
-        {'tags': None, 'title': 'Harucha, Точки безалкогольных напитков', 'town': 'Новосибирск', 'alias': None, 'oid': '70000001080364339', 
-        'hits': 16, 'median': 7, 'arating': 4.5, 'brating': 5.0}
         {% if score.trusted %}
-        <div class="trusted-companies">
+            {% set divclass = "trusted-companies" %}
+            {% set pclass = "green" %}
         {% else %}
-        <div class="suspicious-companies">
+            {% set divclass = "suspicious-companies" %}
+            {% set pclass = "red" %}
         {% endif %}
-            <h2>{{c.title}}</h2>
-            <h3>{{c.address}}</h3>
-            {% if score.trusted %}
-            <span class="error">Аномалий в отзывах не обнаружено</span>
-            {% else %}
-            <span class="error">Аномалия: {{score.reason}}</span>
-            {% endif %}
+
+        <div id="result-container">
+            <div class="companyinfo">
+                <div class="{{divclass}}">
+                    <p><b>{{c.title}} [ <a href="https://2gis.ru/af2gis/firm/{{c.object_id}}">2GIS</a> ]</b></p>
+                    <p>{{c.address}}</p>
+
+                    {% if score.trusted %}
+                        <p class="green">Аномалий в отзывах не обнаружено</p>
+                    {% else %}
+                        <p class="red"><b>Отзывы не внушают доверия</b></p>
+                        <p class="red"><b>Аномалия:</b> {{score.reason}}</p>
+                    {% endif %}
+                    <p>Дата отчета: {{score.date}} </p>
+                </div> <!-- company info div -->
+
+                <div class="score {{divclass}}">
+                    {% for key, value in score.items() %}
+                        {% if key != "param_fp" and key != "trusted" and key != "date" and key != "reason" %}
+                            <p>{{key}}: {{value}}</p>
+                        {% endif %}
+                    {% endfor%}    
+                </div> <!-- score div -->                
+            </div> <!-- companyinfo -->
 
             {% if relations%}
+            <h3>Значимые связи от {{title}}</h3>
             <table>
                 <thead>
                     <th>Компания</th>
@@ -38,11 +55,33 @@
                     {% for rel in relations %}
 
                         <tr>
-                            <td>{% if rel.risk %}<span class="company-tag suspicious-tag">Подозрительная</span>{% endif%}<a href="/report/{{rel.oid}}">{{rel.title}}</a></td>
+
+                            {% if rel.hits >= settings.risk_hit_th %}
+                                {% set hit_class = 'red' %}
+                            {% else %}
+                                {% set hit_class = '' %}
+                            {% endif %}
+
+
+                            {% if rel.arating >= settings.risk_highrate_th and rel.brating >= settings.risk_highrate_th %}
+                                {% set rate_class = 'red' %}
+                            {% else %}
+                                {% set rate_class = '' %}
+                            {% endif %}
+
+                            <td>{% if rel.risk %}<span class="company-tag suspicious-tag">Подозрительная связь</span>{% endif%}<a href="/report/{{rel.oid}}"><b>{{rel.title}}</b></a>
+                            {% if rel.trusted is not none %}
+                                {% if rel.trusted %}
+                                    <span class="company-tag trusted-tag">Проверено</span>
+                                {% else %}
+                                    <span class="company-tag suspicious-tag">Подозрительная</span>
+                                {% endif %}
+                            {% endif %}
+                            </td>
                             <td>{{rel.town}}</td>
-                            <td>{{rel.hits}}</td>
+                            <td class="{{hit_class}}">{{rel.hits}}</td>
                             <td>{{rel.median}}</td>
-                            <td>{{rel.arating | round(1)}} {{rel.brating | round(1)}}</td>
+                            <td class="{{rate_class}}">{{rel.arating | round(1) }} {{rel.brating | round(1)}}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -54,20 +93,12 @@
                 {%endif%}
 
             <div>
-                <details>
-                    <summary>
-                    Score details
-                    </summary>
-                    <div>
-                        {% for key, value in score.items() %}
-                            {{key}}: {{value}}<br>
-                        {% endfor%}    
-                    </div>
-                </details>              
+                Параметры расчета:
+                <span class="score">{{score.param_fp}}</span>
             </div>
+    
         </div>
 
-    </div>
 
     <div id="result">
     </div>

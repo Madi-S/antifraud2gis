@@ -19,7 +19,7 @@ from .company import Company, CompanyList
 from .user import User, get_user
 from .relation import RelationDict, _is_dangerous
 from .settings import settings
-from .exceptions import AFReportNotReady, AFNoCompany
+from .exceptions import AFReportNotReady, AFNoCompany, AFReportAlreadyExists
 
 def compare(a: Company, b: Company):
 
@@ -151,6 +151,7 @@ def detect(c: Company, cl: CompanyList, force=False):
     debug_uids = os.getenv("DEBUG_UIDS", "").split(" ")
 
     if c.report_path.exists() and not force:
+        raise AFReportAlreadyExists(f"Report already exists: {c.report_path}")
         print(f"SKIP because exists {c.report_path}")
         # read 
         with gzip.open(c.report_path, "rt", encoding="utf-8") as f:
@@ -212,7 +213,7 @@ def detect(c: Company, cl: CompanyList, force=False):
                 skipped_users_ratings.append(cr.rating)
                 continue
             u = cr.user
-        
+
             nrlist.append(u.nreviews())
 
             if u.public_id in debug_uids:
@@ -229,6 +230,8 @@ def detect(c: Company, cl: CompanyList, force=False):
                     # print(f"Skip user {u} with {u.nreviews()} reviews")
                     continue
 
+                user_ages.append((cr.created - u.birthday()).days)
+
                 # only for open profiles
                 for r in u.reviews():
 
@@ -237,14 +240,14 @@ def detect(c: Company, cl: CompanyList, force=False):
 
                     if r.oid == c.object_id:
                         continue
-                    user_ages.append((cr.created - u.birthday()).days)
-
 
                     # print("  review:", r)
 
                     rel = c.relations[r.oid]
-                    rel.inc()
-                    rel.add_user(u, cr.rating, r.rating)
+                    rel.hit(cr.rating, r)
+                    ## next two lines, + import addr/title from rel
+                    # rel.inc()
+                    # rel.add_user(u, cr.rating, r.rating)
 
                     c_hits[r.oid] += 1
                     c_weight[r.oid] += 1/u.nreviews()
@@ -305,33 +308,18 @@ def detect(c: Company, cl: CompanyList, force=False):
 
     # print(f"{tr_c=}, {untr_c=}")
 
-    if settings.deep_check:
-        nrel = 0
-        nhits = 0
-        nrel_high_ratings = 0
-        nrel_high_hits = 0
-        for rel in c.relations.relations.values():
-            nhits+= rel.count
-            if rel.check_high_hits():
-                nrel += 1
-                if rel.check_high_ratings():
-                    nrel_high_ratings += 1
-                    nrel_high_hits += rel.count
+    # tmp: always on
 
-        
-        towns = set()
-        hirel = 0
-        hirelhihits = 0
-        for rel in c.relations.relations.values():
-            if rel.check_high_hits():            
+    towns = set()
+    titles = set()
+    hirel = 0
+    for rel in c.relations.relations.values():
+        if rel.check_high_hits():
+            if rel.check_high_ratings():
                 hirel += 1
-                if rel.check_high_ratings():
-                    hirelhihits += 1
-                    try:
-                        b = Company(rel.b)                    
-                    except AFNoCompany:
-                        continue
-                    towns.add(b.get_town())
+                towns.add(rel.get_btown())
+                titles.add(rel.get_btitle())
+                print(f"add title {rel.get_btitle()} for {rel.b}")
 
     low_nrlist = list(filter(lambda x: x <= settings.risk_median_rpu, nrlist))
 
@@ -349,14 +337,17 @@ def detect(c: Company, cl: CompanyList, force=False):
     score['param_fp'] = settings.param_fp()
     score['median_reviews_per_user'] = round(float(np.median(nrlist)), 1)
 
-    if settings.deep_check:
-        score['high_hit_relations'] = hirel
-        score['high_hit_towns'] = len(towns)
-        score['happy_long_rel'] = int(100*hirel/len(towns)) if len(towns) > 0 else 0
+    score['high_hit_relations'] = hirel
+    score['high_hit_towns'] = len(towns)
+    score['high_hit_titles'] = len(titles)
+
+    score['happy_long_rel'] = int(100*len(towns)/hirel) if hirel > 0 else 0
+    score['sametitle_rel'] = int(100*len(titles)/hirel) if hirel > 0 else 0
+
+    print(titles)
+    print(f"{len(titles)} titles, hirel: {hirel}")
+    print(score['sametitle_rel'])
         
-        score['nrel_high_ratings'] = nrel_high_ratings
-        score['highrate_relations'] = int(100*nrel / nrel_high_ratings) if nrel_high_ratings > 0 else 0
-        score['highrate_hits'] = int(nrel_high_hits / nrel) if nrel > 0 else 0
 
     score['mean_user_age'] = int(np.median(user_ages)) if user_ages else None
     
@@ -372,23 +363,34 @@ def detect(c: Company, cl: CompanyList, force=False):
     # c.score['full_rate'] = c.count_rate()
     # c.score['trusted_rate'] = round(float(np.mean(trusted_ratings)),2)
 
+    print(hirel >= settings.sametitle_rel and score['sametitle_rel'] >= settings.sametitle_ratio)
+    print(hirel, settings.sametitle_rel, score['sametitle_rel'], settings.sametitle_ratio)
+
     # make verdict
     if score['empty_user_ratio'] > settings.risk_empty_user_ratio:
         score['trusted'] = False
         score['reason'] = f"empty_user_ratio {score['empty_user_ratio']}% ({skipped_users}/{processed_users + skipped_users}) ({score['empty_user_avg_rate']})"
+
     elif c.relations.nrisk_users > settings.risk_user_ratio:
         score['trusted'] = False
         score['reason'] = f"risk_users {c.relations.nrisk_users}"
+
     elif score['median_reviews_per_user'] <= settings.risk_median_rpu:
         score['trusted'] = False
         score['reason'] = f"median_reviews_per_user {score['median_reviews_per_user']} <= {settings.risk_median_rpu} ({len(low_nrlist)} of {len(nrlist)} are <= {settings.risk_median_rpu})"
-    elif settings.deep_check and len(towns) >= settings.happy_long_rel_min_towns_th \
+
+    elif len(towns) >= settings.happy_long_rel_min_towns_th \
             and score['happy_long_rel'] >= settings.happy_long_rel_th:
         score['trusted'] = False
-        score['reason'] = f"happy_long_rel {score['happy_long_rel']}% ({hirel} of {len(towns)})"
+        score['reason'] = f"happy_long_rel {score['happy_long_rel']}% ({len(towns)} of {hirel})"
+
+    elif hirel >= settings.sametitle_rel and score['sametitle_rel'] <= settings.sametitle_ratio:
+        score['trusted'] = False
+        score['reason'] = f"sametitle_rel {score['sametitle_rel']}% ({hirel} of {len(titles)})"
+
     elif score['mean_user_age'] <= settings.mean_user_age:
         score['trusted'] = False
-        score['reason'] = f"mean_user_age {score['mean_user_age']} <= {settings.mean_user_age}"    
+        score['reason'] = f"mean_user_age {score['mean_user_age']} <= {settings.mean_user_age} ({sum(a <= settings.mean_user_age for a in user_ages)} of {len(user_ages)})"
     else:
         score['trusted'] = True
 

@@ -86,3 +86,9 @@ aliases = {
         'alias': 'sheremetevo',
     },
 }
+
+def resolve_alias(alias: str):
+    for k, v in aliases.items():
+        if v.get('alias') == alias:
+            return k
+        

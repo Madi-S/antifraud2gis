@@ -7,7 +7,8 @@
 {% block content %}
    
     <div id="actionbox">
-        На данный момент нет подготовленного отчета по компании <b>{{title}}</b>
+        <p>На данный момент нет подготовленного отчета по компании <b>{{title}}</b>.</p>
+        <p>Это можно легко исправить.</p>
         <form method="POST" action="/submit">
             <input type="hidden" name="oid" value="{{oid}}">
             <button>Рассчитать статистические аномалии</button>

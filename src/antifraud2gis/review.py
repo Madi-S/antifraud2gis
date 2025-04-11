@@ -2,7 +2,7 @@ import datetime
 from rich import print_json
 
 class Review():
-    def __init__(self, data, user=None):
+    def __init__(self, data, user=None, company=None):
         self._data = data
         self.review_id = data['id']
         self.rating = data['rating']
@@ -11,7 +11,10 @@ class Review():
         self.user_name = data['user']['name']
         self.text = data.get('text')        
         self.nphotos = len(data['photos'])
+
         self._user = user
+        self._company = company
+
 
         self.created = datetime.datetime.strptime(data['date_created'].split('T')[0], "%Y-%m-%d")
         self.age = (datetime.datetime.now() - self.created).days
@@ -20,14 +23,20 @@ class Review():
         else:
             self.user_age = None
 
-        try:
-            self.title = data['object']['name']
-        except KeyError:
-            self.title = None
-        try:
-            self.address = data['object']['address']
-        except KeyError:
-            self.address = None
+        if self._company:
+            self.title = self._company.title
+            self.address = self._company.address
+
+        else:
+            try:
+                self.title = data['object']['name']
+            except KeyError:
+                self.title = None
+
+            try:
+                self.address = data['object']['address']
+            except KeyError:
+                self.address = None
 
 
     def is_visible(self):

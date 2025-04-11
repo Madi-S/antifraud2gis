@@ -1,5 +1,12 @@
+@font-face {
+    font-family: 'Cascadia Code';
+    src: url('/static/fonts/CascadiaCode-Regular.woff2') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
 body {
-    font-family: 'Arial', sans-serif;
+    font-family: 'PT Sans', sans-serif;
     line-height: 1.6;
     margin: 0;
     padding: 20px;
@@ -12,14 +19,15 @@ h1 {
     color: #2c3e50;
     text-align: center;
     margin-bottom: 30px;
+    font-family: 'Bitter';
 }
 
 .search-container {
     background-color: #f9f9f9;
-    padding: 20px;
+    /*padding: 20px;*/
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-bottom: 30px;
+    margin-bottom: 1em;
 }
 
 .search-form {
@@ -50,13 +58,14 @@ button:hover {
     background-color: #2980b9;
 }
 
-.result-container {
-    margin-top: 30px;
-    padding: 20px;
-    border: 1px solid #eee;
-    border-radius: 8px;
-    min-height: 200px;
-    background-color: #f5f5f5;
+.companyinfo {
+    display: flex;
+    justify-content: space-around;
+}
+
+.companyinfo > div {
+    flex-grow: 1;
+    margin: 1em;
 }
 
 .company-lists {
@@ -77,15 +86,38 @@ button:hover {
 .company-list a:active { color: #333333; } 
 
 
+.progress-div {
+    text-align: left;
+    display: inline-block;
+    white-space: nowrap;  
+}
+
+.footnote {
+    font-size: 0.8em;
+    text-align: left;
+    display: inline-block;
+    white-space: nowrap;  
+}
 
 .trusted-companies {
-    background-color: #e8f5e9;
+    /* background-color: #e8f5e9; */
+    background-color: #d8e5d9; 
     border: 1px solid #a5d6a7;
+    padding: 10px;
+    border-radius: 10px;
 }
 
 .suspicious-companies {
-    background-color: #ffebee;
+    /* background-color: #ffebee; */
+    background-color: #efdbde; 
     border: 1px solid #ef9a9a;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.trusted-companies p,
+.suspicious-companies p {
+    margin: 0;
 }
 
 h2 {
@@ -125,37 +157,44 @@ li {
     color: #b71c1c;
 }
 
-#trusted { 
-    font-family: Arial, sans-serif; }
-
-
-
-
 .company { margin-bottom: 10px; cursor: pointer; }
 .company-title { font-size: 1.0em; font-weight: bold; }
 .company-address { font-size: 0.9em; color: gray;  }
 
+.red { color: red; }
+.green { color: green; }
+
+.score {
+    font-family: 'Cascadia Code';
+    font-size: 0.8em;
+}
+
+
+
 /* Result div, table */
 /* Modern Table Design */
 #result-container {
-    font-family: 'Segoe UI', Roboto, -apple-system, sans-serif;
+    font-family: 'PT Sans', -apple-system, sans-serif;
     max-width: 100%;
     overflow-x: auto;
-    margin: 2rem auto;
-    padding: 1.5rem;
-    background-color: #cccccc;  /* Light grey background */
+    margin: 0em auto;
+    padding: 0.5rem;
+    /*background-color: #000;  /* Light grey background */
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
 #result-container table {
+    border: 1px solid #ddd;
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
     background-color: white;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    /*box-shadow: 10px 10px 30px rgba(0, 0, 0, 0.05);*/
+    box-shadow: 1px 5px 5px #666;
+    margin-bottom: 1em;
 }
 
 #result-container thead {
@@ -173,14 +212,20 @@ li {
 
 #result-container td {
     padding: 0rem 1.0rem;
-    border-bottom: 1px solid #edf2f7;
+    
     color: #4a5568;
     font-size: 0.95rem;
 }
 
+#result-container td.red {
+       color: red;
+       font-weight: bold;
+}
+
+
 /* Zebra striping with subtle grey shades */
 #result-container tbody tr:nth-child(odd) {
-    background-color: #ffffff;
+    background-color: #ccc;
 }
 
 #result-container tbody tr:nth-child(even) {
@@ -188,31 +233,16 @@ li {
 }
 
 
-/* Zebra striping with subtle grey shades */
-#result-container tbody tr.risk:nth-child(odd) {
-    background-color: #f00;
-    color: forestgreen;
-}
-
-#result-container tbody tr.risk:nth-child(even) {
-    background-color: #f44;
-    color: white;
-}
-
-
 #result-container tbody tr:hover {
-    background-color: #444;  /* Light blue-grey on hover */
+    background-color: #aaa;  /* Light blue-grey on hover */
     color: #0f0;
 }
 
 #result-container tbody tr:last-child td {
     border-bottom: none;
+    padding-bottom: 0.2em;
 }
 
-#result-container tbody tr.risk a {
-    text-decoration: none;
-    color: white;
-}
 #result-container tbody tr a {
     text-decoration: none;    
 }
@@ -236,5 +266,5 @@ li {
 #actionbox button {
     display: block;     
     margin: 10px auto 0;
-  }
-  
+}
+

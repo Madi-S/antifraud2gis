@@ -2,6 +2,8 @@ import argparse
 import time
 import random
 import pkg_resources
+import redis
+from rich.text import Text
 
 from ..company import CompanyList, Company
 from ..user import User
@@ -9,10 +11,8 @@ from ..settings import settings
 from ..fraud import detect, dump_report
 from ..exceptions import AFNoCompany
 from ..aliases import aliases
-
 from .summary import printsummary
-
-from rich.text import Text
+from ..const import REDIS_TASK_QUEUE_NAME, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_WORKER_STATUS, REDIS_DRAMATIQ_QUEUE
 
 def countdown(n=5):
     for i in range(n, 0, -1):
@@ -128,3 +128,61 @@ def handle_dev(args: argparse.Namespace):
         # check users age for review
         u = User(args.args[0])
         print(u.birthday())
+
+
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("cmd", choices=['company-users', 'queue'])
+    parser.add_argument("-v", "--verbose", default=False, action='store_true')
+    parser.add_argument("--full", default=False, action='store_true')
+    parser.add_argument("args", nargs='*', help='extra args')
+
+    g = parser.add_argument_group('Company selection')
+    g.add_argument("-t", "--town", default=None, help="Filter by town")
+    g.add_argument("-n", "--name", default=None, help="Filter by name (fnmatch)")
+    g.add_argument("-l", "--limit", metavar='N', type=int, help="Limit to N companies")
+    g.add_argument("-c", "--company", metavar='OID', help="Company ID")
+    g.add_argument("--report", default=None, action='store_true', help="Company has antifraud report")
+    g.add_argument("--noreport", default=None, action='store_true', help="Company has NO antifraud report")
+    g.add_argument("--really", default=None, action='store_true', help="Really. (flag for dangerous commands like wipe)")
+    
+    g = parser.add_argument_group('Fraud options')
+    g.add_argument("-s", "--show", metavar='N', type=int, help="Show links with N hits")
+    g.add_argument("--overwrite", default=None, action='store_true', help="Recalculate even if fraud report exists")
+
+    return parser.parse_args()
+
+def main():
+    args = get_args()
+    cl = CompanyList()
+
+    cmd = args.cmd
+
+    if cmd == "company-users":
+        c = cl[args.company]
+        print(c)
+        c.load_reviews()
+        for u in c.users():
+            print(u)
+
+    elif cmd == "queue":
+        r = redis.Redis(decode_responses=True)
+
+        if 'reset' in args.args:
+            print("RESET queue")
+            r.delete(REDIS_TASK_QUEUE_NAME)
+            r.delete(REDIS_TRUSTED_LIST)
+            r.delete(REDIS_UNTRUSTED_LIST)
+
+        wstatus = r.get(REDIS_WORKER_STATUS)
+        tasks = r.lrange(REDIS_TASK_QUEUE_NAME, 0, -1)  # возвращает list of bytes    
+        trusted_len = r.llen(REDIS_TRUSTED_LIST)
+        untrusted_len = r.llen(REDIS_UNTRUSTED_LIST)
+        dqlen = r.llen(REDIS_DRAMATIQ_QUEUE)
+
+        print("Queue report")
+        print(f"Worker status: {wstatus}")
+        print(f"Dramatiq queue: {dqlen}")
+        print(f"Tasks ({len(tasks)}): {tasks}")
+        print(f"Trusted ({trusted_len})")
+        print(f"Untrusted ({untrusted_len})")

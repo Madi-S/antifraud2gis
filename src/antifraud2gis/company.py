@@ -1,12 +1,14 @@
 import json
 from loguru import logger
 import time
+import fnmatch
 import sys
 import gzip
 import traceback
 import numpy as np
 from rich.progress import Progress
 from rich import print_json
+from rich.pretty import pretty_repr
 from requests.exceptions import RequestException
 
 from .settings import settings
@@ -15,24 +17,34 @@ from .user import User, get_user
 from .review import Review
 from .session import session
 from .exceptions import AFNoCompany
+from .aliases import resolve_alias
+from .statistics import statistics
 from .aliases import aliases
 
 # to avoid circular import
-class RelationDict:
-    pass
+#class RelationDict:
+#    pass
+
 
 class Company:
 
-    relations: RelationDict
+    relations: 'RelationDict'
 
-    def __init__(self, object_id):
+    def __init__(self, object_id: str):
         assert object_id is not None
-        assert object_id.isdigit()
+
+        if not object_id.isdigit():
+            # try to resolve alias
+            object_id = resolve_alias(object_id) or object_id            
+
+        if not object_id.isdigit():
+            raise AFNoCompany(f'Not an digital OID {object_id!r}')
 
         self.object_id = object_id
         self.reviews_path = settings.company_storage / (object_id + '-reviews.json.gz')
         self.basic_path = settings.company_storage / (object_id + '-basic.json.gz')
         self.report_path = settings.company_storage / (object_id + '-report.json.gz')
+        self.loaded_from_disk = False
 
         self._reviews = list()
         
@@ -48,6 +60,9 @@ class Company:
 
         self.rate = None
 
+        self.total_count_2gis = None
+        self.branch_count_2gis = None
+        self.branch_rating_2gis = None
 
         # ratings
         # self.score = dict()
@@ -79,7 +94,7 @@ class Company:
 
 
     def load_basic(self):
-        if not self.load_basic_from_disk():            
+        if not self.load_basic_from_disk():
             self.load_basic_from_network()
             self.save_basic()
         
@@ -111,12 +126,15 @@ class Company:
                 self.error = _basic.get('error', None)
                 self.frozen = _basic.get('frozen', False)
                 self.tags = _basic.get('tags', None)
+                self.total_count_2gis = _basic.get('total_count_2gis', None)
+                self.branch_count_2gis = _basic.get('branch_count_2gis', None)
+                self.branch_rating_2gis = _basic.get('branch_rating_2gis', None)
                 if not self.title:
                     # logger.debug(f"no title for {self.object_id}")
                     pass
+                self.loaded_from_disk = True
                 return bool(self.title)
-        else:
-            logger.debug(f"no file on disk for {self.object_id}")
+        else:            
             return False
 
 
@@ -130,11 +148,18 @@ class Company:
                 'address': self.address,
                 # 'score': self.score,
                 'error': self.error,
-                'frozen': self.frozen
+                'frozen': self.frozen,
+                'total_count_2gis': self.total_count_2gis,
+                'branch_count_2gis': self.branch_count_2gis,
+                'branch_rating_2gis': self.branch_rating_2gis
             }
             if self.tags:
                 basic['tags'] = self.tags
             json.dump(basic, f)
+
+            if not self.loaded_from_disk:
+                statistics.created_new_companies += 1
+
 
 
     def load_reviews(self, local_only=False):
@@ -154,9 +179,12 @@ class Company:
     def count_rate(self):
         self.ratings = list()
         for r in self._reviews:
-            self.ratings.append(r['rating'])
+            if r['rating'] is None:
+                print_json(data=r)
+            if r['rating'] is not None:
+                self.ratings.append(r['rating'])
 
-        if self.ratings:        
+        if self.ratings:
             self.rate = round(float(np.mean(self.ratings)), 2)
         return(self.rate)
 
@@ -196,9 +224,11 @@ class Company:
         url = f'https://public-api.reviews.2gis.com/2.0/branches/{self.object_id}/reviews?limit=50&fields=meta.providers,meta.branch_rating,meta.branch_reviews_count,meta.total_count,reviews.hiding_reason,reviews.is_verified&without_my_first_review=false&rated=true&sort_by=friends&key={REVIEWS_KEY}&locale=ru_RU'
         unused_geo = f'https://public-api.reviews.2gis.com/2.0/geo/141373143684284/reviews?limit=50&fields=meta.providers,meta.geo_rating,meta.geo_reviews_count,meta.total_count,reviews.hiding_reason&sort_by=friends&without_my_first_review=false&key={REVIEWS_KEY}&locale=ru_RU'
 
+        # print("LOAD NETWORK REVIEWS", self.object_id)
+
         page=0
         while url:
-            logger.debug(f".. load reviews p{page} for {self}: {url}")
+            # logger.debug(f".. load reviews p{page} for {self}: {url}")
             r = None
             while r is None:
 
@@ -219,23 +249,30 @@ class Company:
 
             r.raise_for_status()
             data = r.json()
-            total_count = data['meta']['total_count']            
-            branch_reviews_count = data['meta']['branch_reviews_count']
-            if total_count == 0 or branch_reviews_count == 0:                
+
+            if self.total_count_2gis is None:
+                self.total_count_2gis = data['meta']['total_count']
+                self.branch_count_2gis = data['meta']['branch_reviews_count']
+                self.branch_rating_2gis = data['meta']['branch_rating']
+                # print(f"Total/Branch reviews count: {self.total_count_2gis}/{self.branch_count_2gis}")
+
+            if self.total_count_2gis == 0 or self.branch_count_2gis == 0:                
                 raise AFNoCompany(f"No reviews for {self.object_id}")
+
+            # print(f"{self.object_id} page {page} first: {data['reviews'][0]['date_created']} last: {data['reviews'][-1]['date_created']}")
 
             self._reviews.extend(data['reviews'])
             url = data['meta'].get('next_link')
             time.sleep(SLEEPTIME)
 
             if len(self._reviews) >= LOAD_NREVIEWS:
-                print(f"max reviews {len(self._reviews)} reached")
+                # print(f"max reviews {len(self._reviews)} reached")
                 break
 
             page+=1
         
 
-        logger.info(f"Company {self.object_id}: loaded {len(self._reviews)} reviews")
+        logger.info(f"Company {self.object_id}: loaded from network {len(self._reviews)} reviews")
         # why we were called?
         # print("----------")
         # print("".join(traceback.format_stack(limit=10)))         
@@ -245,6 +282,8 @@ class Company:
         with gzip.open(self.reviews_path, 'wt') as f:
             json.dump(self._reviews, f)
 
+        statistics.total_companies_loaded+=1
+        statistics.total_companies_loaded_network+=1
 
     def risk(self):
         if not self.score:
@@ -270,7 +309,7 @@ class Company:
         if self.frozen:
             tags += "[FROZEN]"
 
-        return f'Company({self.object_id} rate:{self.rate} {titlestr} addr: {self.address} reviews:{len(self._reviews) if self._reviews else "not loaded"}{tags})'
+        return f'Company({self.object_id} rate: {self.branch_rating_2gis} {titlestr} addr: {self.address} reviews:{len(self._reviews) if self._reviews else "not loaded"}{tags})'
 
     def get_title(self):
         return self.title or self.object_id
@@ -295,7 +334,7 @@ class Company:
 
     def reviews(self):
         for r in self._reviews:
-            yield Review(r)
+            yield Review(r, company=self)
     
     def nreviews(self):
         return len(self._reviews)
@@ -360,20 +399,24 @@ class CompanyList():
         raise KeyError(f"Company {index} not found")
 
 
-    def companies(self, town = None):
+    def companies(self, oid=None, name = None, town = None, report = None, noreport = None, limit=None):
+        n = 0
+
+        if oid:
+            c = Company(oid)
+            if company_match(c, oid=None, name=name, town=town, report=report, noreport=noreport):
+                yield c
+            return
+
         for f in self.path.glob('*-basic.json.gz'):
-            oid = f.name.split('-')[0]
-            c = Company(oid)        
-            if town:                
-                # filter by town
-                town = town.lower()
-                ctown = c.get_town()
-                if ctown is None:
-                    continue
-                ctown = ctown.lower()
-                if town != ctown:
-                    continue
-            yield c
+            company_oid = f.name.split('-')[0]
+            c = Company(company_oid)
+            # print("created c", c.report_path)
+            if company_match(c, oid=oid, name=name, town=town, report=report, noreport=noreport):
+                yield c
+                n+=1
+                if limit and n==limit:
+                    return
     
 
     def company_exists(self, oid):
@@ -385,4 +428,37 @@ class CompanyList():
             return str(Company(oid))
         else:
             return oid
-    
+
+def company_match(c: Company, oid: str, name: str = None, town: str = None, report = None, noreport = None):
+
+    if oid and c.object_id != oid:
+        return False   
+
+    if report:
+        if not c.report_path.exists():
+            return False
+
+    if noreport:
+        if c.report_path.exists():
+            return False
+
+    if name:
+        name = name.lower()
+        cname = c.get_title().lower()
+        if not fnmatch.fnmatch(cname, name):
+            return False
+
+    if town:                
+        # filter by town
+        town = town.lower()
+        ctown = c.get_town()
+        if ctown is None:
+            return False
+        ctown = ctown.lower()        
+        if town != ctown:
+            return False
+        
+        
+    # all filters matched
+    return True
+            

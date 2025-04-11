@@ -24,6 +24,7 @@ Repository = "https://github.com/yaroslaff/scrape2gis"
 
 [project.scripts]
 af2gis = "antifraud2gis.cli.main:main"
+af2dev = "antifraud2gis.cli.dev:main"
 af2worker = "antifraud2gis.cli.af2worker:main"
 af2web = "antifraud2gis.cli.af2web:main"
 

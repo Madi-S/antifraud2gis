@@ -1,8 +1,12 @@
 class AFException(Exception):
     pass
 
-class AFReportNotReady(Exception):
+class AFReportNotReady(AFException):
     pass
 
-class AFNoCompany(Exception):
+class AFNoCompany(AFException):
     pass
+
+class AFReportAlreadyExists(AFException):
+    pass
+

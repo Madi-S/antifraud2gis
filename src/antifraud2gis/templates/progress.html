@@ -1,16 +1,31 @@
 {% extends 'base.html' %}
 
 {% block title %}{{title}}{% endblock %}
-{% block header %}{{title}} - статистический анализ отзывов{% endblock %}
+{% block header %}{{title}} :: статистический анализ отзывов{% endblock %}
 
 
 {% block content %}
 
     
 <div id="actionbox">
-    Обрабатывается. 
-    Позиция/размер очереди: {{position}}/{{qsize}}.
-    Состояние обработчика: {{wstatus}}
-    <button id="auto_refresh_btn" onclick="window.location.reload()">Обновить вручную</button>
+    {% if wstatus == oid %}
+        <div class="progress-div">
+            <h3>Именно в предвкушении и есть главное наслаждение, не правда ли?</h3>
+            Прямо сейчас наш обработчик уже обсчитывает Вашу задачу и уже скоро Вы увидите что-то ранее невидимое для Вас. 
+
+        </div>
+    {% else%}
+        <div class="progress-div">
+            <h3>Пришло время размышлений о смысле жизни!</h3>
+            <p>
+                Ваша задача стоит в очереди ({{qpos}}). Всего в очереди таких задач: {{qsize}}. 
+            </p>
+            <p>            
+                А вы, добрый и веселый, сидите в удобном кресле.
+            </p>
+        </div>        
+        {% endif %}
+
+    <button id="auto_refresh_btn" onclick="window.location.reload()">Обновить (10)</button>
 </div>
 {% endblock %}

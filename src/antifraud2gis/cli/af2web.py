@@ -18,6 +18,8 @@ from rich import print_json
 from ..company import Company, CompanyList
 from ..exceptions import AFReportNotReady, AFNoCompany
 from ..tasks import fraud_task
+from ..settings import settings
+from ..const import REDIS_TASK_QUEUE_NAME, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_WORKER_STATUS
 
 app = FastAPI()
 
@@ -26,8 +28,6 @@ templates_path = importlib.resources.files("antifraud2gis") / "templates"
 
 templates = Jinja2Templates(directory=templates_path)
 app.mount("/static", StaticFiles(directory=static_path), name="static")
-
-dqname="dramatiq:default"
 
 r = redis.Redis(decode_responses=True)
 
@@ -39,8 +39,8 @@ class ReportRequest(BaseModel):
 async def home(request: Request):
 
 
-    last_trusted = [json.loads(item) for item in r.lrange('af2gis:last_trusted', 0, -1)]
-    last_untrusted = [json.loads(item) for item in r.lrange('af2gis:last_untrusted', 0, -1)]
+    last_trusted = [json.loads(item) for item in r.lrange(REDIS_TRUSTED_LIST, 0, -1)]
+    last_untrusted = [json.loads(item) for item in r.lrange(REDIS_UNTRUSTED_LIST, 0, -1)]
 
     return templates.TemplateResponse(
         "index.html",
@@ -95,47 +95,37 @@ async def recent(request: Request):
 
     return data
 
-@app.post("/api/report")
-async def api_report(data: ReportRequest):
-    print("report for", data.oid)
-    c = Company(data.oid)
-    print("report for", c)
-
-    try:
-        print("read report from", c.report_path)
-        with gzip.open(c.report_path, "rt") as fh:
-            report = json.load(fh)
-            return report
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Report not found")
-
-    return "OK"
-
 @app.get("/report/{oid}", response_class=HTMLResponse)
 async def report(request: Request, oid: str):
-    print("HTML report for", oid)
     try:
         c = Company(oid)
     except AFNoCompany:
-        print("redirect.....")
         return RedirectResponse(request.url_for("miss", oid=oid))
         # raise HTTPException(status_code=404, detail="Company not found")
-    print("report for", c)
 
     try:
-        print("read report from", c.report_path)
         with gzip.open(c.report_path, "rt") as fh:
             report = json.load(fh)
             # print_json(data=report)
             # print(report['relations'][0])
 
-            last_trusted = [json.loads(item) for item in r.lrange('af2gis:last_trusted', 0, -1)]
-            last_untrusted = [json.loads(item) for item in r.lrange('af2gis:last_untrusted', 0, -1)]
+            for rel in report['relations']:
+                rep_path = settings.company_storage / (rel['oid'] + '-report.json.gz')
+                if rep_path.exists():
+                    with gzip.open(rep_path, "rt") as fh:
+                        rel_report = json.load(fh)
+                        rel['trusted'] = rel_report['score']['trusted']
+                else:
+                    rel['trusted'] = None
+
+            last_trusted = [json.loads(item) for item in r.lrange(REDIS_TRUSTED_LIST, 0, -1)]
+            last_untrusted = [json.loads(item) for item in r.lrange(REDIS_UNTRUSTED_LIST, 0, -1)]
 
 
             return templates.TemplateResponse(
                 "report.html", {
-                    "request": request, 
+                    "request": request,
+                    "settings": settings,
                     "c": c,
                     "title": c.title,
                     "score": report['score'],
@@ -145,7 +135,6 @@ async def report(request: Request, oid: str):
                     }
             )
 
-            return report
     except FileNotFoundError:
         # return 
         return RedirectResponse(request.url_for("miss", oid=oid))
@@ -156,12 +145,11 @@ async def report(request: Request, oid: str):
 @app.get("/miss/{oid}", response_class=HTMLResponse)
 async def miss(request: Request, oid: str):
 
-    last_trusted = [json.loads(item) for item in r.lrange('af2gis:last_trusted', 0, -1)]
-    last_untrusted = [json.loads(item) for item in r.lrange('af2gis:last_untrusted', 0, -1)]
+    last_trusted = [json.loads(item) for item in r.lrange(REDIS_TRUSTED_LIST, 0, -1)]
+    last_untrusted = [json.loads(item) for item in r.lrange(REDIS_UNTRUSTED_LIST, 0, -1)]
 
     try:
         c = Company(oid)
-        print("miss for", c)
 
     except (AFNoCompany, AssertionError):
         return templates.TemplateResponse(
@@ -185,13 +173,11 @@ async def miss(request: Request, oid: str):
 
 @app.post("/submit", response_class=HTMLResponse)
 async def submit(request: Request, oid: str = Form(...)):
-    print("submit", oid)
-    task_id = fraud_task.send(oid).message_id
-    print("submit task_id", task_id)
-    task_data = r.get(f"dramatiq:message:{task_id}")
-    print("submit task data", task_data)  # Shows serialized task details
+    fraud_task.send(oid)
 
-    return RedirectResponse(request.url_for("progress", oid=oid, task_id=task_id), status_code=303)
+    r.rpush('af2gis:queue', oid)
+
+    return RedirectResponse(request.url_for("progress", oid=oid), status_code=303)
 
 
 @app.post("/search", response_class=HTMLResponse)
@@ -200,8 +186,8 @@ async def search(request: Request, query: str = Form(...)):
     return RedirectResponse(request.url_for("report", oid=query), status_code=303)
 
 
-@app.get("/progress/{oid}/{task_id}", response_class=HTMLResponse)
-async def progress(request: Request, oid: str, task_id: str):
+@app.get("/progress/{oid}", response_class=HTMLResponse)
+async def progress(request: Request, oid: str):
     try:
         c = Company(oid)
         print("miss for", c)
@@ -215,28 +201,29 @@ async def progress(request: Request, oid: str, task_id: str):
     if c.report_path.exists():
         return RedirectResponse(request.url_for("report", oid=oid))
 
-    queue_size = r.llen(dqname)    
-    print(f"Queue size: {queue_size}")
-    
-    wstatus = r.get('af2gis:worker_status')
-    tasks = r.lrange(dqname, 0, -1)
-
+    wstatus = r.get(REDIS_WORKER_STATUS)
+    tasks = r.lrange(REDIS_TASK_QUEUE_NAME, 0, -1)  # возвращает list of bytes    
     print("tasks:", tasks)
+    queue_size = len(tasks)
+    try:
+        qpos = tasks.index(oid) + 1
+        print(f"Position: {qpos}")
+    except ValueError:
+        print("Not found")
+        qpos=None
     
-    task_data = r.get(f"dramatiq:message:{task_id}")
-    print("TASK:", task_data)
 
-    position = next((i for i, task in enumerate(tasks) if task_id in str(task)), None)
-    print("pos:", position)
+    # position = next((i for i, task in enumerate(tasks) if task_id in str(task)), None)
+    # print("pos:", position)
 
-    last_trusted = [json.loads(item) for item in r.lrange('af2gis:last_trusted', 0, -1)]
-    last_untrusted = [json.loads(item) for item in r.lrange('af2gis:last_untrusted', 0, -1)]
+    last_trusted = [json.loads(item) for item in r.lrange(REDIS_TRUSTED_LIST, 0, -1)]
+    last_untrusted = [json.loads(item) for item in r.lrange(REDIS_UNTRUSTED_LIST, 0, -1)]
 
 
     return templates.TemplateResponse(
         "progress.html", {
             "request": request, "title": c.title, "oid": c.object_id,
-            "qsize": queue_size, "position": position, "wstatus": wstatus,
+            "qsize": queue_size, "wstatus": wstatus, "qpos": qpos,
             "trusted": last_trusted,
             "untrusted": last_untrusted
         }
@@ -246,7 +233,8 @@ async def progress(request: Request, oid: str, task_id: str):
 def main():
     global templates    
     import uvicorn
-    auto_reload = True
+    auto_reload = bool(os.getenv("AUTO_RELOAD", False))
+    print("AUTO_RELOAD:", auto_reload)
     load_dotenv()
     uvicorn.run("antifraud2gis.cli.af2web:app", host="0.0.0.0", port=8000, reload=auto_reload)
 

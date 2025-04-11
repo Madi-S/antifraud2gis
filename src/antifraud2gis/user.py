@@ -13,6 +13,7 @@ import gzip
 from .db import db
 from .const import WSS_THRESHOLD, LOAD_NREVIEWS, SLEEPTIME
 from .settings import settings
+from .statistics import statistics
 from .session import session
 from .review import Review
 from .logger import logger
@@ -159,6 +160,9 @@ class User:
         # print("save to", self.reviews_path)
         with gzip.open(self.reviews_path, 'wt') as f:
             json.dump(self._reviews, f)
+
+        statistics.total_users_loaded_network += 1
+        statistics.total_users_loaded += 1
 
     @property
     def url(self):
