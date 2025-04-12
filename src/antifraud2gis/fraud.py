@@ -320,8 +320,7 @@ def detect(c: Company, cl: CompanyList, force=False):
             if rel.check_high_ratings():
                 hirel += 1
                 towns.add(rel.get_btown())
-                titles.add(rel.get_btitle())
-                print(f"add title {rel.get_btitle()} for {rel.b}")
+                titles.add(rel.get_btitle())                
 
     low_nrlist = list(filter(lambda x: x <= settings.risk_median_rpu, nrlist))
 

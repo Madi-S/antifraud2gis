@@ -9,6 +9,7 @@ from .company import CompanyList, Company
 from .exceptions import AFNoCompany, AFReportAlreadyExists
 from .logger import logger
 from .const import REDIS_WORKER_STATUS, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_TASK_QUEUE_NAME
+from .user import reset_user_pool
 
 broker = dramatiq.get_broker()
 
@@ -20,19 +21,25 @@ r = redis.Redis(
 
 r.set(REDIS_WORKER_STATUS, f'started...')
 
+started = time.time()
+processed = 0
 
 @dramatiq.actor
 def fraud_task(oid: str):
+    global processed
     #lock = FileLock(lock_path)
 
-    #with lock.acquire():
-    print(f"remove {oid} from {REDIS_TASK_QUEUE_NAME}")
-    x = r.lrem(REDIS_TASK_QUEUE_NAME, count=1, value=oid)
-    print(x)
+    task_started = time.time()
 
+    #with lock.acquire():
+    r.lrem(REDIS_TASK_QUEUE_NAME, count=1, value=oid)
+    
     c = Company(oid)
     cl = CompanyList()
     
+    if c.error:
+        logger.warning(f"Worker: Company {oid!r} is error: {c.error} (geo?)")
+        return
 
     print(f"{os.getpid()} task STARTED {c}")
     r.set(REDIS_WORKER_STATUS, oid)
@@ -44,8 +51,6 @@ def fraud_task(oid: str):
     except AFReportAlreadyExists:
         logger.warning(f"Worker: Report for {oid!r} already exists")
         return
-
-    
     
     r.set(REDIS_WORKER_STATUS, f'finished {oid}')
     print(f"{os.getpid()} task FINISHED {c}")
@@ -67,7 +72,10 @@ def fraud_task(oid: str):
 
     r.lpush(lname, json.dumps(res))
     r.ltrim(lname, 0, 19)
+    reset_user_pool()
+    processed += 1
 
-
+    logger.info(f"Worker: {oid!r} processed in {int(time.time() - task_started)} sec")
+    logger.info(f"Worker total: {processed} tasks in {int(time.time() - started)}")
 
 

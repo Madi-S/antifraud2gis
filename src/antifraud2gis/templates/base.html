@@ -27,7 +27,7 @@
 
     <div class="company-lists">
         <div class="company-list trusted-companies" id="trusted">
-            <h2>Проверенные компании</h2>
+            <h2>Проверенные отзывы</h2>
             {% for company in trusted %}
                 <a href="/report/{{company.oid}}">
                     <div class="company">
@@ -42,7 +42,7 @@
         </div>
         
         <div class="company-list suspicious-companies">
-            <h2>Подозрительные компании</h2>
+            <h2>Подозрительные отзывы</h2>
             {% for company in untrusted %}
                 <a href="/report/{{company.oid}}">
                     <div class="company">
