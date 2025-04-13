@@ -67,7 +67,7 @@ async def report(request: Request, oid: str):
     try:
         with gzip.open(c.report_path, "rt") as fh:
             report = json.load(fh)
-            print_json(data=report)
+            # print_json(data=report)
             # print(report['relations'][0])
 
 
