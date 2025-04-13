@@ -12,6 +12,7 @@ from rich import print_json, print
 from rich.console import Console
 from rich.table import Table
 import redis
+import gzip
 
 from pathlib import Path
 
@@ -25,6 +26,7 @@ from ..const import SUMMARY_PERIOD
 from ..exceptions import AFNoCompany, AFReportNotReady, AFReportAlreadyExists
 from ..settings import settings
 from ..statistics import statistics
+from ..aliases import resolve_alias
 
 # CLI
 from .summary import add_summary_parser, handle_summary, printsummary
@@ -83,10 +85,11 @@ def UNUSED_get_args():
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("cmd", choices=['list','stop','summary', 'fraud', 'submitfraud', 'delreport', 'wipe'])
+    parser.add_argument("cmd", choices=['info', 'list','stop','summary', 'fraud', 'compare', 'submitfraud', 'delreport', 'wipe'])
     parser.add_argument("-v", "--verbose", default=False, action='store_true')
     parser.add_argument("--sleep", type=float, default=None, help='sleep N.M seconds after each processed company')
     parser.add_argument("--fmt", "-f", default="normal", choices=['brief', 'normal', 'full'])
+    parser.add_argument("args", nargs='*')
 
     g = parser.add_argument_group('Company selection')
     g.add_argument("-t", "--town", default=None, help="Filter by town")
@@ -100,13 +103,13 @@ def get_args():
     g = parser.add_argument_group('Fraud options')
     g.add_argument("-s", "--show", metavar='N', type=int, help="Show links with N hits")
     g.add_argument("--overwrite", default=None, action='store_true', help="Recalculate even if fraud report exists")
+    g.add_argument("--explain", default=False, action='store_true', help="Re-run fraud detection with explanation")
 
     return parser.parse_args()
 
 
 def main():
     args = get_args()
-    #print(args)
 
     stopfile = Path('.stop')
     
@@ -126,6 +129,29 @@ def main():
             printsummary(cl=cl, full=True)
         else:
             printsummary(cl=cl, full=False)
+
+    elif args.cmd == "compare":
+        if len(args.args) != 2:
+            print("Need 2 companies")
+            sys.exit(1)
+        c1 = cl[args.args[0]]
+        c2 = cl[args.args[1]]
+        compare(c1, c2)
+
+    elif args.cmd == "info":
+        c = Company(args.company)
+        basic = json.load(gzip.open(c.basic_path))
+        print_json(data=basic)
+
+        try:
+            report = json.load(gzip.open(c.report_path))
+        except FileNotFoundError:
+            print("No report yet, run fraud first")
+            return
+        print_json(data=report['score'])
+        print(f"{len(report['relations'])} relations")
+        
+        
 
     elif args.cmd in ["list", "fraud", "delreport", "wipe", "submitfraud"]:
 
@@ -159,11 +185,21 @@ def main():
                 if args.show:
                     settings.show_hit_th = args.show
                 try:
-                    detect(c, cl, force=args.overwrite)
+                    if args.explain:
+                        try:
+                            report = json.load(gzip.open(c.report_path))
+                        except FileNotFoundError:
+                            print("No report yet, run fraud first")
+                            return
+                        reason = report['score']['reason'].split(' ')[0]
+                    else:
+                        reason=None
+
+                    detect(c, cl, explain=reason, force=args.overwrite)
                     effectively_processed += 1
-                    dump_report(c.object_id)
                 except AFReportAlreadyExists as e:
-                    print(f"Report already exists for {c}")
+                    print(f"Report already exists for {c} and no --overwrite")
+                dump_report(c.object_id)
 
             elif args.cmd == "submitfraud":
                 print(f"Submit fraud report request for {c}")

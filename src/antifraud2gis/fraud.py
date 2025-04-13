@@ -91,6 +91,7 @@ def compare(a: Company, b: Company):
     b_oldest = None
     b_newest = None
 
+    printn = 0
     for uid in ab:
         if db.is_private_profile(uid):
             n_private += 1
@@ -128,7 +129,8 @@ def compare(a: Company, b: Company):
             bratings.append(brev.rating)
 
         
-        print(f"{arev.rating}/{brev.rating} age:{arev.user_age}/{brev.user_age} {u}")
+        printn += 1
+        print(f"{printn}: {arev.rating}/{brev.rating} age:{arev.user_age}/{brev.user_age} {u}")
         # print(f"  {u.birthday_str} {arev.created_str} {brev.created_str}")
             
     aavg = round(float(np.mean(aratings)), 2)
@@ -145,18 +147,20 @@ def compare(a: Company, b: Company):
     print(f"B reviews: {b_oldest.strftime('%Y-%m-%d')} .. {b_newest.strftime('%Y-%m-%d')}")
 
 
-def detect(c: Company, cl: CompanyList, force=False):
+def detect(c: Company, cl: CompanyList, explain: str = None, force=False):
 
     debug_oids = os.getenv("DEBUG_OIDS", "").split(" ")
     debug_uids = os.getenv("DEBUG_UIDS", "").split(" ")
 
-    if c.report_path.exists() and not force:
+    if c.report_path.exists() and not force and not explain:
         raise AFReportAlreadyExists(f"Report already exists: {c.report_path}")
         print(f"SKIP because exists {c.report_path}")
         # read 
         with gzip.open(c.report_path, "rt", encoding="utf-8") as f:
             result = json.load(f)  # Directly parse JSON
         return result['score']
+
+    print("EXPLAIN:", explain)
 
     c.relations = RelationDict(c)
 
@@ -202,17 +206,34 @@ def detect(c: Company, cl: CompanyList, force=False):
 
         for idx, cr in enumerate(c.reviews()):
             progress.update(task, advance=1, description=f"[green]User {idx}")
+
             if cr.age > settings.max_review_age:
                 # too old review, safely skip it
                 # print("Skip review", cr)
+
+                if explain == 'median_user_age':
+                    print(f"EXPLANATION: Skip too old ({cr.age} > {settings.max_review_age}) review: {cr}")
                 continue
 
             if cr.uid is None:
                 # print("!! Skip review without user", cr)
+
                 skipped_users += 1
+
                 skipped_users_ratings.append(cr.rating)
+                if explain in ['median_user_age', 'empty_user_ratio']:
+                    print(f"EXPLANATION: Skip ({skipped_users}) anon (no-user) review: {cr}")
+
                 continue
             u = cr.user
+            u.load()
+            if u.nreviews() == 0:
+                skipped_users += 1
+                skipped_users_ratings.append(cr.rating)
+                if explain in ['median_user_age', 'empty_user_ratio']:
+                    print(f"EXPLANATION: Skip ({skipped_users}) anon (no-user) review: {cr}")
+                    print(f"!! Skip user {u} with 0 reviews")
+                continue
 
             nrlist.append(u.nreviews())
 
@@ -227,12 +248,20 @@ def detect(c: Company, cl: CompanyList, force=False):
                 if u.nreviews() > MAX_USER_REVIEWS:
                     skipped_users += 1
                     skipped_users_ratings.append(cr.rating)
+
+                    if explain in ['median_user_age', 'empty_user_ratio']:
+                        print(f"EXPLANATION: Skip ({skipped_users}) review from extremely active user ({u.nreviews()} > {MAX_USER_REVIEWS}): {u}")
+
                     # print(f"Skip user {u} with {u.nreviews()} reviews")
                     continue
 
 
                 if cr.rating >= settings.risk_highrate_th:
-                    user_ages.append((cr.created - u.birthday()).days)
+                    user_age = (cr.created - u.birthday()).days
+                    user_ages.append(user_age)
+
+                    if explain == 'median_user_age':
+                        print(f"EXPLANATION: Add user age {user_age} for {u}. Review created: {cr.created_str}, user 1st review: {u.birthday_str}")
 
                 # only for open profiles
                 for r in u.reviews():
@@ -326,6 +355,15 @@ def detect(c: Company, cl: CompanyList, force=False):
 
     score = dict()
 
+
+    if explain == 'median_user_age':
+        print(f"EXPLANATION Calculate median for ({len(user_ages)}): {sorted(user_ages)}")
+        print(f"EXPLANATION: median: {int(np.median(user_ages)) if user_ages else None}, threshold: {settings.median_user_age}")
+
+    elif explain == "empty_user_ratio":
+        print(f"EXPLANATION: skipped: {skipped_users}, processed: {processed_users}")
+        print(f"EXPLANATION: empty_user_ratio: ({skipped_users}/{processed_users + skipped_users}) ({int(100 * skipped_users / (processed_users + skipped_users))}%) > {settings.risk_empty_user_ratio}")
+
     #score['NR'] = round(neigh_review_ratio,3)
     #score['TwinScore'] = round(twin_score/n_neighbours,3)
     #score['WSS'] = round(wscore_sum,3)
@@ -333,7 +371,7 @@ def detect(c: Company, cl: CompanyList, force=False):
     score['NDangerous'] = c.relations.ndangerous
     score['nrisk_users'] = c.relations.nrisk_users
     score['total_users'] = processed_users + skipped_users 
-    score['empty_user_ratio'] = int(100 * skipped_users / (processed_users + skipped_users))        
+    score['empty_user_ratio'] = int(100 * skipped_users / (processed_users + skipped_users))
     score['date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     score['param_fp'] = settings.param_fp()
     score['median_reviews_per_user'] = round(float(np.median(nrlist)), 1)
@@ -345,7 +383,9 @@ def detect(c: Company, cl: CompanyList, force=False):
     score['happy_long_rel'] = int(100*len(towns)/hirel) if hirel > 0 else 0
     score['sametitle_rel'] = int(100*len(titles)/hirel) if hirel > 0 else 0
 
-    score['mean_user_age'] = int(np.median(user_ages)) if user_ages else None
+
+
+    score['median_user_age'] = int(np.median(user_ages)) if user_ages else None
     
 
 
@@ -381,9 +421,9 @@ def detect(c: Company, cl: CompanyList, force=False):
         score['trusted'] = False
         score['reason'] = f"sametitle_rel {score['sametitle_rel']}% ({hirel} of {len(titles)})"
 
-    elif score['mean_user_age'] <= settings.mean_user_age:
+    elif len(user_ages) > settings.median_user_age_nusers and score['median_user_age'] <= settings.median_user_age:
         score['trusted'] = False
-        score['reason'] = f"mean_user_age {score['mean_user_age']} <= {settings.mean_user_age} ({sum(a <= settings.mean_user_age for a in user_ages)} of {len(user_ages)})"
+        score['reason'] = f"median_user_age {score['median_user_age']} <= {settings.median_user_age} ({sum(a <= settings.median_user_age for a in user_ages)} of {len(user_ages)})"
     else:
         score['trusted'] = True
 

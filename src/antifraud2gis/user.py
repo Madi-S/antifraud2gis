@@ -48,6 +48,10 @@ class User:
 
 
     def load(self, local_only=False):
+        if self._reviews:
+            # already loaded
+            return
+        
         if self.reviews_path.exists():
             with gzip.open(self.reviews_path, "rt") as f:
                 try:
@@ -74,7 +78,7 @@ class User:
 
     def birthday(self):
         self.load()
-        r = Review(self._reviews[-1])
+        r = Review(sorted(self._reviews, key=lambda r: r['date_created'])[0])
         return r.created
             
     @property
@@ -89,7 +93,8 @@ class User:
 
     def reviews(self):
         self.load()
-        for r in self._reviews:
+        # reviews are sorted by date_edited desc, not by date_created, we need to re-sort
+        for r in sorted(self._reviews, key=lambda r: r['date_created']):
             yield Review(r, user=self)
 
     def review_for(self, oid: str) -> Review:
@@ -177,7 +182,7 @@ class User:
 
 
     def __repr__(self):
-        return f'User({self.public_id} {self.name} (rev: {len(self._reviews) if self._reviews else "not loaded"}) {self.url})'
+        return f'User({self.name} (rev: {len(self._reviews) if self._reviews else "not loaded"}) {self.url})'
     
 def get_user(public_id: str) -> User:
     global user_pool

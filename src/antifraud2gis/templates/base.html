@@ -13,8 +13,12 @@
 
 </head>
 <body>
-    <h1>{% block header %}{% endblock %}</h1>
-    
+
+    <div class="page-header">
+        <a class="logo-link" href="/"><img src="/static/img/logo.png" alt="Logo" class="logo"></a>
+        <h1>{% block header %}{% endblock %}</h1>
+    </div>
+      
     <div class="search-container">
         <form class="search-form" id="search-form" method="POST" action="/search">
             <input type="text" id="oid" name="query" placeholder="Введите название компании" required>
@@ -42,13 +46,13 @@
         </div>
         
         <div class="company-list suspicious-companies">
-            <h2>Подозрительные отзывы</h2>
+            <h2>Аномальные отзывы</h2>
             {% for company in untrusted %}
                 <a href="/report/{{company.oid}}">
                     <div class="company">
                         <div class="company-title">
                             {{company.title}} ({{company.get('rating','')}})
-                            <span class="company-tag suspicious-tag">Подозрительная</span>
+                            <span class="company-tag suspicious-tag">Аномалия</span>
                             </div>
                         <div class="company-address">{{company.address}}</div>
                     </div>
@@ -57,6 +61,17 @@
         </div>
     </div>
 
+    <footer class="site-footer">
+        <div class="footer-content">
+          <span>&copy; 2025 antifraud2gis</span>
+          <a href="/page/about">О проекте</a>
+          <a href="https://2gis.ru/">Сделано с ❤️ к 2GIS</a>
+          <a href="https://github.com/yaroslaff/antifraud2gis" target="_blank">Репозиторий GitHub</a>
+          <a href="/page/disclaimer">Отказ от ответственности</a>
+          <a href="/page/credits">Благодарим</a>
+        </div>
+      </footer>
+      
     <script src="/static/js/app.js">
     </script>
 </body>

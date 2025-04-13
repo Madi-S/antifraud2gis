@@ -11,6 +11,9 @@ import json
 import gzip
 import importlib.resources
 import redis
+import markdown
+import frontmatter
+
 from dramatiq import get_broker
 
 from rich import print_json
@@ -27,6 +30,7 @@ static_path = importlib.resources.files("antifraud2gis") / "static"
 templates_path = importlib.resources.files("antifraud2gis") / "templates"
 
 templates = Jinja2Templates(directory=templates_path)
+
 app.mount("/static", StaticFiles(directory=static_path), name="static")
 
 r = redis.Redis(decode_responses=True)
@@ -185,8 +189,37 @@ async def progress(request: Request, oid: str):
     )
 
 
+@app.get("/page/{page}", response_class=HTMLResponse)
+def md_page(request: Request, page: str):
+    if page not in ['about', 'anomaly', 'disclaimer', 'credits']:
+        raise HTTPException(status_code=404, detail="Page not found")
+
+    try:
+        md_file = importlib.resources.files("antifraud2gis") / 'pages' / f"{page}.md"
+        post = frontmatter.loads(md_file.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return HTMLResponse(status_code=404, content="Page not found")
+
+
+    title = post.get("title", page.capitalize())
+    content_html = markdown.markdown(post.content)
+
+    last_trusted = [json.loads(item) for item in r.lrange(REDIS_TRUSTED_LIST, 0, -1)]
+    last_untrusted = [json.loads(item) for item in r.lrange(REDIS_UNTRUSTED_LIST, 0, -1)]
+
+
+
+    return templates.TemplateResponse("markdown.html", {
+        "request": request,
+        "title": title,
+        "content": content_html,
+        "trusted": last_trusted,
+        "untrusted": last_untrusted
+    })
+
+
 def main():
-    global templates    
+    global templates
     import uvicorn
     auto_reload = bool(os.getenv("AUTO_RELOAD", False))
     print("AUTO_RELOAD:", auto_reload)

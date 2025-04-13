@@ -31,17 +31,19 @@ class Settings():
         self.happy_long_rel_min_towns_th = int(os.getenv('HAPPY_LONG_REL_MIN_TOWNS_TH', '3'))
 
 
+
         # 5 years old maximum 365*5=1825
         self.max_review_age = int(os.getenv('MAX_REVIEW_AGE', '1825'))
 
-        self.mean_user_age = int(os.getenv('MEAN_USER_AGE', '60'))
+        self.median_user_age = int(os.getenv('MEDIAN_USER_AGE', '60'))
+        self.median_user_age_nusers = int(os.getenv('MEDIAN_USER_AGE_NUSERS', '10'))
 
         self.proxy = os.getenv('HTTPS_PROXY', None)
 
     def param_fp(self):
         return f"risk_hit={self.risk_hit_th} risk_median_th={self.risk_median_th} risk_highrate_th={self.risk_highrate_th} " \
             f"risk_empty_user_ratio={self.risk_empty_user_ratio} risk_user_ratio={self.risk_user_ratio} " \
-            f"happy_long_rel_th={self.happy_long_rel_th} mean_user_age={self.mean_user_age} " \
+            f"happy_long_rel_th={self.happy_long_rel_th} median_user_age={self.median_user_age} " \
             f"deep_check={self.deep_check}"
 
 settings = Settings()

@@ -19,7 +19,7 @@ from .session import session
 from .exceptions import AFNoCompany
 from .aliases import resolve_alias
 from .statistics import statistics
-from .aliases import aliases
+from .aliases import aliases, resolve_alias
 
 # to avoid circular import
 #class RelationDict:
@@ -33,9 +33,7 @@ class Company:
     def __init__(self, object_id: str):
         assert object_id is not None
 
-        if not object_id.isdigit():
-            # try to resolve alias
-            object_id = resolve_alias(object_id) or object_id            
+        object_id = resolve_alias(object_id)
 
         if not object_id.isdigit():
             raise AFNoCompany(f'Not an digital OID {object_id!r}')
@@ -403,7 +401,12 @@ class CompanyList():
         n = 0
 
         if oid:
-            c = Company(oid)
+            try:
+                c = Company(oid)
+            except AFNoCompany:
+                # no review 70000001096097346
+                return
+
             if company_match(c, oid=None, name=name, town=town, report=report, noreport=noreport):
                 yield c
             return

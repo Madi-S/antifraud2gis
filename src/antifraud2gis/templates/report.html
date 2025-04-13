@@ -1,8 +1,8 @@
 
 {% extends 'base.html' %}
 
-{% block title %}{{title}}{% endblock %}
-{% block header %}{{title}} - статистический анализ отзывов{% endblock %}
+{% block title %}{{title}} - статистический анализ отзывов{% endblock %}
+{% block header %}{{title}}{% endblock %}
 
 
 {% block content %}
@@ -19,14 +19,18 @@
         <div id="result-container">
             <div class="companyinfo">
                 <div class="{{divclass}}">
-                    <p><b>{{c.title}} [ <a href="https://2gis.ru/af2gis/firm/{{c.object_id}}">2GIS</a>: {{c.branch_rating_2gis}} ]</b></p>
+                    <p><a href="https://2gis.ru/af2gis/firm/{{c.object_id}}"><b>{{c.title}}</b></a></p>
+                    <p>Оценка 2GIS: <b>{{c.branch_rating_2gis}}</b> ({{c.branch_count_2gis}} отзывов)</p>
                     <p>{{c.address}}</p>
 
                     {% if score.trusted %}
                         <p class="green">Аномалий в отзывах не обнаружено</p>
                     {% else %}
-                        <p class="red"><b>Отзывы не внушают доверия</b></p>
-                        <p class="red"><b>Аномалия:</b> {{score.reason}}</p>
+                        <p class="red"><b>В отзывах есть статистическая аномалия</b></p>
+                        <p class="red">
+                            <a href="{{ request.url_for('md_page', page='anomaly').path }}">
+                            <b>Аномалия:</b> {{score.reason}}
+                        </a></p>
                     {% endif %}
                     <p>Дата отчета: {{score.date}} </p>
                 </div> <!-- company info div -->

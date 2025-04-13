@@ -10,6 +10,7 @@ from .exceptions import AFNoCompany, AFReportAlreadyExists
 from .logger import logger
 from .const import REDIS_WORKER_STATUS, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_TASK_QUEUE_NAME
 from .user import reset_user_pool
+from .statistics import statistics
 
 broker = dramatiq.get_broker()
 
@@ -76,6 +77,7 @@ def fraud_task(oid: str):
     processed += 1
 
     logger.info(f"Worker: {oid!r} processed in {int(time.time() - task_started)} sec")
-    logger.info(f"Worker total: {processed} tasks in {int(time.time() - started)}")
+    logger.info(f"Worker total: {processed} tasks in {int(time.time() - started)} sec")
+    logger.info(statistics)
 
 

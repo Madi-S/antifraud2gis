@@ -132,7 +132,7 @@ def handle_dev(args: argparse.Namespace):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("cmd", choices=['company-users', 'queue'])
+    parser.add_argument("cmd", choices=['company-users', 'user-reviews', 'queue'])
     parser.add_argument("-v", "--verbose", default=False, action='store_true')
     parser.add_argument("--full", default=False, action='store_true')
     parser.add_argument("args", nargs='*', help='extra args')
@@ -164,6 +164,12 @@ def main():
         c.load_reviews()
         for u in c.users():
             print(u)
+
+    if cmd == "user-reviews":
+
+        u = User(args.args[0])
+        for r in u.reviews():
+            print(r)
 
     elif cmd == "queue":
         r = redis.Redis(decode_responses=True)
