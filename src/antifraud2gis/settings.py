@@ -12,6 +12,8 @@ class Settings():
 
         self.deep_check = bool(int(os.getenv('DEEP_CHECK', '0')))
 
+        self.min_reviews = int(os.getenv('MIN_REVIEWS', '20'))
+
         self.risk_hit_th = int(os.getenv('RISK_HIT_TH', '10'))
         self.sametitle_rel = int(os.getenv('SAMETITLE_HIT', '3'))
         self.sametitle_ratio = int(os.getenv('SAMETITLE_RATIO', '50'))

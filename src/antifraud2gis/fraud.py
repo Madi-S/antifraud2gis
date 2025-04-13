@@ -174,6 +174,28 @@ def detect(c: Company, cl: CompanyList, explain: str = None, force=False):
 
     c.load_reviews()
     c.load_users()
+
+
+    """ skip too small targets """
+    if c.nreviews() <= settings.min_reviews:
+        # bypass
+        score = {
+            'trusted': True,
+            'total_users': c.nreviews(),
+            'reason': f'Too few reviews ({c.nreviews()}) to be fraudulent',
+            'date': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        report = dict()        
+        report['score'] = score
+        report['relations'] = list()
+        with gzip.open(c.report_path, "wt") as fh:
+            json.dump(report, fh)
+        
+        return score
+            # print("saved")
+
+
+
     logger.info(f"Run fraud detect for {c.title} ({c.address}) {c.object_id} {c.nreviews()} reviews")
 
     c_hits = defaultdict(int)
@@ -199,7 +221,6 @@ def detect(c: Company, cl: CompanyList, explain: str = None, force=False):
                 progress.update(task, advance=1, description=f"[green]User {idx}")
                 upid = r['user']['public_id']
     """
-
 
     with Progress() as progress:
         task = progress.add_task("[cyan]Analyzing user's reviews...", total=c.nreviews())
