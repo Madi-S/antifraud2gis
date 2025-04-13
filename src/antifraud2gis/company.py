@@ -165,10 +165,14 @@ class Company:
             return
         
         if self.reviews_path.exists():
-            with gzip.open(self.reviews_path, "rt") as f:
-                # print(f"Load company reviews from {self.reviews_path} mtime: {int(self.reviews_path.stat().st_mtime)} sz: {self.reviews_path.stat().st_size}")
-                self._reviews = json.load(f)
-                self.count_rate()
+            try:
+                with gzip.open(self.reviews_path, "rt") as f:
+                    # print(f"Load company reviews from {self.reviews_path} mtime: {int(self.reviews_path.stat().st_mtime)} sz: {self.reviews_path.stat().st_size}")
+                    self._reviews = json.load(f)
+                    self.count_rate()
+            except gzip.BadGzipFile:
+                logger.error("Bad gzip file! {self.reviews_path}")
+                sys.exit(1)
         else:
             if not local_only:
                 self.load_reviews_from_network()
@@ -323,11 +327,19 @@ class Company:
         data = {
             'oid': self.object_id,
             'title': self.title,
-            'alias': self.alias,
             'address': self.address,
-            'score': self.score,
-            'nreviews': self.nreviews(),            
+            'town': self.get_town(),
+            'searchstr': f"{self.get_town()} {self.title}",
+            'rating_2gis': self.branch_rating_2gis,
+            'trusted': None,
+            'nreviews': self.nreviews(),
         }
+
+        if self.report_path.exists():
+            with gzip.open(self.report_path, 'rt') as f:
+                report = json.load(f)
+                data['trusted'] = report["score"]['trusted']
+                
         return data
 
     def reviews(self):

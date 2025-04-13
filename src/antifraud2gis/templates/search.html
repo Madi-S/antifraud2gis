@@ -1,0 +1,52 @@
+
+{% extends 'base.html' %}
+
+{% block title %}{{title}} - статистический анализ отзывов{% endblock %}
+{% block header %}{{title}}{% endblock %}
+
+
+{% block content %}
+
+        <div id="result-container">
+            {% if results %}
+            <h3>Результаты поиска {{title}}</h3>
+            <table>
+                <thead>
+                    <th>Компания</th>
+                    <th>Адрес</th>
+                    <th>Рейтинг</th>
+                    <th>Отзывы</th>
+                </thead>
+                <tbody>
+                    
+                    {% for res in results %}
+                        <tr>
+                            <td><a href="/report/{{res.oid}}"><b>{{res.title}}</b></a>
+                            {% if res.trusted is not none %}
+                                {% if res.trusted %}
+                                    <span class="company-tag trusted-tag">Проверено</span>
+                                {% else %}
+                                    <span class="company-tag suspicious-tag">Подозрительная</span>
+                                {% endif %}
+                            {% endif %}
+                            </td>
+                            <td>{{res.address}}</td>
+                            <td>{{res.rating_2gis}}</td>
+                            <td>{{res.nreviews}}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {%else%}
+            <div>
+                <b>Нет результатов</b>
+            </div>
+            {%endif%}
+    
+        </div>
+
+    <div id="result">
+    </div>
+
+
+{% endblock %}

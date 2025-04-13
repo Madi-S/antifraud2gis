@@ -21,7 +21,7 @@
       
     <div class="search-container">
         <form class="search-form" id="search-form" method="POST" action="/search">
-            <input type="text" id="oid" name="query" placeholder="Введите название компании" required>
+            <input type="text" id="oid" name="query" value="{{query}}" placeholder="Введите название компании или 2GIS object_id" required>
             <button type="submit">Найти</button>
         </form>
     </div>
@@ -68,7 +68,6 @@
           <a href="https://2gis.ru/">Сделано с ❤️ к 2GIS</a>
           <a href="https://github.com/yaroslaff/antifraud2gis" target="_blank">Репозиторий GitHub</a>
           <a href="/page/disclaimer">Отказ от ответственности</a>
-          <a href="/page/credits">Благодарим</a>
         </div>
       </footer>
       

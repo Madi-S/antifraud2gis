@@ -10,6 +10,12 @@ This project is absolutely unofficial, not related to 2GIS.ru.
 # Export to JSONL
 af2gis c export  > /tmp/export.jsonl
 
+# or to local search jsonl
+af2gis export > ~/.af2gis-storage/search.jsonl
+
+# find specific record
+jq 'select(.oid == "70000001041490377")' /tmp/export.jsonl
+
 # get length (number of companies)
 jq -s 'length' /tmp/export.jsonl
 

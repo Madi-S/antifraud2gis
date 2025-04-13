@@ -6,6 +6,8 @@ from pydantic import BaseModel
 
 from pathlib import Path
 from dotenv import load_dotenv
+
+import re
 import os
 import json
 import gzip
@@ -23,6 +25,7 @@ from ..exceptions import AFReportNotReady, AFNoCompany
 from ..tasks import fraud_task
 from ..settings import settings
 from ..const import REDIS_TASK_QUEUE_NAME, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_WORKER_STATUS
+from ..search import search
 
 app = FastAPI()
 
@@ -32,6 +35,8 @@ templates_path = importlib.resources.files("antifraud2gis") / "templates"
 templates = Jinja2Templates(directory=templates_path)
 
 app.mount("/static", StaticFiles(directory=static_path), name="static")
+
+all_jsonl = '/'
 
 r = redis.Redis(decode_responses=True)
 
@@ -144,10 +149,33 @@ async def submit(request: Request, oid: str = Form(...)):
     return RedirectResponse(app.url_path_for("progress", oid=oid), status_code=303)
 
 
+
+
 @app.post("/search", response_class=HTMLResponse)
-async def search(request: Request, query: str = Form(...)):
-    print("search", query)
-    return RedirectResponse(app.url_path_for("report", oid=query), status_code=303)
+async def search_view(request: Request, query: str = Form(...)):
+    # 15 actually
+    if query.isdigit() and len(query) >= 12:
+        print(f"redirect by id {query!r}")
+        return RedirectResponse(app.url_path_for("report", oid=query), status_code=303)
+    else:
+        print(f"search for {query!r}")
+        results = search(query, limit=25)
+        print(f"got {len(results)} results for {query!r}")
+
+        last_trusted = [json.loads(item) for item in r.lrange(REDIS_TRUSTED_LIST, 0, -1)]
+        last_untrusted = [json.loads(item) for item in r.lrange(REDIS_UNTRUSTED_LIST, 0, -1)]
+
+        return templates.TemplateResponse(
+            "search.html", {
+                "request": request,
+                "query": query,
+                "title": f"Поиск: {query}",
+                "results": results,
+                "trusted": last_trusted,
+                "untrusted": last_untrusted
+                }
+        )
+
 
 
 @app.get("/progress/{oid}", response_class=HTMLResponse)
@@ -218,6 +246,18 @@ def md_page(request: Request, page: str):
         "trusted": last_trusted,
         "untrusted": last_untrusted
     })
+
+# catch-all must go LAST
+@app.get("{full_path:path}")
+async def catch_all(request: Request, full_path: str):
+    # https://2gis.ru/togliatti/user/dfee5cd501624eafb36d4abc1c440a56/firm/3096753025014179?m=49.718483%2C53.511175%2F10.83
+    m = re.search(r"/firm/(\d{10,20})", full_path)
+    if m:
+        object_id = m.group(1)
+        print(f"Extracted {object_id} from {full_path}")
+        return RedirectResponse(app.url_path_for("report", oid=object_id))
+    else:
+        return RedirectResponse(app.url_path_for("home"))
 
 
 def main():

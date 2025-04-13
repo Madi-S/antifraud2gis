@@ -160,8 +160,6 @@ def detect(c: Company, cl: CompanyList, explain: str = None, force=False):
             result = json.load(f)  # Directly parse JSON
         return result['score']
 
-    print("EXPLAIN:", explain)
-
     c.relations = RelationDict(c)
 
     start = time.time()
@@ -248,7 +246,7 @@ def detect(c: Company, cl: CompanyList, explain: str = None, force=False):
                 continue
             u = cr.user
             u.load()
-            if u.nreviews() == 0:
+            if u.nreviews() <= 1:
                 skipped_users += 1
                 skipped_users_ratings.append(cr.rating)
                 if explain in ['median_user_age', 'empty_user_ratio']:
@@ -256,15 +254,12 @@ def detect(c: Company, cl: CompanyList, explain: str = None, force=False):
                     print(f"!! Skip user {u} with 0 reviews")
                 continue
 
-            nrlist.append(u.nreviews())
+            else:
+                # u.nreviews > 1
 
-            if u.public_id in debug_uids:
-                print(f"!! DEBUG: {u}")
-
-            if u.nreviews():
+                nrlist.append(u.nreviews())
                 if u.public_id in debug_uids:
                     print(f"!! DEBUG: {u}")
-
                 
                 if u.nreviews() > MAX_USER_REVIEWS:
                     skipped_users += 1
@@ -288,9 +283,11 @@ def detect(c: Company, cl: CompanyList, explain: str = None, force=False):
                 for r in u.reviews():
 
                     if not r.is_visible():
+                        # print("invisibe")
                         continue
 
                     if r.oid == c.object_id:
+                        # print("same object")
                         continue
 
                     # print("  review:", r)
@@ -392,6 +389,8 @@ def detect(c: Company, cl: CompanyList, explain: str = None, force=False):
     score['NDangerous'] = c.relations.ndangerous
     score['nrisk_users'] = c.relations.nrisk_users
     score['total_users'] = processed_users + skipped_users 
+    score['processed_users'] = processed_users 
+    score['skipped_users'] = skipped_users 
     score['empty_user_ratio'] = int(100 * skipped_users / (processed_users + skipped_users))
     score['date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     score['param_fp'] = settings.param_fp()
@@ -427,7 +426,7 @@ def detect(c: Company, cl: CompanyList, explain: str = None, force=False):
 
     elif c.relations.nrisk_users > settings.risk_user_ratio:
         score['trusted'] = False
-        score['reason'] = f"risk_users {c.relations.nrisk_users}"
+        score['reason'] = f"risk_users {c.relations.nrisk_users}% ({len(c.relations.dangerous_users)} / {c.relations.nusers})"
 
     elif score['median_reviews_per_user'] <= settings.risk_median_rpu:
         score['trusted'] = False

@@ -27,6 +27,7 @@ from ..exceptions import AFNoCompany, AFReportNotReady, AFReportAlreadyExists
 from ..settings import settings
 from ..statistics import statistics
 from ..aliases import resolve_alias
+from ..search import search
 
 # CLI
 from .summary import add_summary_parser, handle_summary, printsummary
@@ -85,7 +86,7 @@ def UNUSED_get_args():
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("cmd", choices=['info', 'list','stop','summary', 'fraud', 'compare', 'submitfraud', 'delreport', 'wipe'])
+    parser.add_argument("cmd", choices=['info', 'list','stop','summary', 'fraud', 'compare', 'submitfraud', 'delreport', 'wipe', 'export', 'search'])
     parser.add_argument("-v", "--verbose", default=False, action='store_true')
     parser.add_argument("--sleep", type=float, default=None, help='sleep N.M seconds after each processed company')
     parser.add_argument("--fmt", "-f", default="normal", choices=['brief', 'normal', 'full'])
@@ -151,9 +152,13 @@ def main():
         print_json(data=report['score'])
         print(f"{len(report['relations'])} relations")
         
+    elif args.cmd == "search":
+        res = search(args.args[0])
+        for rec in res:
+            print(rec)
         
 
-    elif args.cmd in ["list", "fraud", "delreport", "wipe", "submitfraud"]:
+    elif args.cmd in ["list", "fraud", "delreport", "wipe", "submitfraud", "export"]:
 
         # if company is given, create it first (if it's missing)
         if args.company and args.cmd not in ['wipe', 'submitfraud']:
@@ -186,11 +191,12 @@ def main():
                     settings.show_hit_th = args.show
                 try:
                     if args.explain:
-                        try:
-                            report = json.load(gzip.open(c.report_path))
-                        except FileNotFoundError:
-                            print("No report yet, run fraud first")
-                            return
+
+                        if not c.report_path.exists():
+                            print("No report yet, running fraud first...")
+                            detect(c, cl)
+
+                        report = json.load(gzip.open(c.report_path))
                         reason = report['score']['reason'].split(' ')[0]
                     else:
                         reason=None
@@ -218,6 +224,8 @@ def main():
                 else:
                     print("[NOT REALLY] wipe", c)
 
+            elif args.cmd == "export":
+                _print(json.dumps(c.export()))
             
             # Stop if stopfile
             if stopfile.exists():
@@ -240,7 +248,7 @@ def main():
                 time.sleep(args.sleep)
 
 
-        if args.fmt == 'normal':
+        if args.fmt == 'normal' and args.cmd not in ['export']:
             # POST PROCESSING
             if args.cmd == "fraud":
                 print(f'# Fraud reports calculated {effectively_processed}')

@@ -9,6 +9,8 @@ class Settings():
         self.user_storage = self.storage / "users"
         self.private_user_storage = self.storage / "users" / "_private.json"
         self.company_storage = self.storage / "companies"
+        self.search = self.storage / "search.jsonl"
+
 
         self.deep_check = bool(int(os.getenv('DEEP_CHECK', '0')))
 

@@ -5,7 +5,7 @@ from loguru import logger
 
 
 class MyDB:
-    def __init__(self, directory=Path(".cache")):
+    def __init__(self, directory=Path("~/.cache").expanduser()):
         self.directory = directory
 
         if self.directory.exists() is False:
