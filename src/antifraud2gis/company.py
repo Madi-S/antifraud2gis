@@ -171,7 +171,7 @@ class Company:
                     self._reviews = json.load(f)
                     self.count_rate()
             except gzip.BadGzipFile:
-                logger.error("Bad gzip file! {self.reviews_path}")
+                logger.error(f"Bad gzip file! {self.reviews_path}")
                 sys.exit(1)
         else:
             if not local_only:
