@@ -209,6 +209,7 @@ def main():
                             break
                         print(f"Sleeping 10s due to redis queue length ({dqlen} >= {args.maxq})")
                         time.sleep(10)
+                print("submit fraud request for", c)
                 fraud_task.send(c.object_id)
                 r.rpush('af2gis:queue', c.object_id)
 

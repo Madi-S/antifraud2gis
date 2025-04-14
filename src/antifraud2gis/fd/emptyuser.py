@@ -60,5 +60,5 @@ class EmptyUserFD(BaseFD):
         print("EXPLAIN empty_user_ratio", file=fh)
         for line in self.records:
             print(line, file=fh)
-        print(f"Empty ratings ({len(self.empty_ratings)}): {self.empty_ratings} ")
-        print(f"Not-empty ratings ({len(self.non_empty_ratings)}): {self.non_empty_ratings} ")        
+        print(f"Empty ratings ({len(self.empty_ratings)}): {self.empty_ratings}", file=fh)
+        print(f"Not-empty ratings ({len(self.non_empty_ratings)}): {self.non_empty_ratings}", file=fh)
