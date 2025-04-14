@@ -36,7 +36,8 @@ class Settings():
         self.risk_user_ratio = float(os.getenv('RISK_USER_TH', '30'))
 
 
-        self.empty_user = float(os.getenv('EMPTY_USER', '66'))
+        # untrusted if EMPTY_USER% (and their rating differs)
+        self.empty_user = float(os.getenv('EMPTY_USER', '75'))
         self.empty_user_diff = float(os.getenv('EMPTY_USER_DIFF', '0.5'))
 
         self.median_rpu = float(os.getenv('MEDIAN_RPU', '2'))
