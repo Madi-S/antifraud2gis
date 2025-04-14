@@ -209,8 +209,8 @@ def main():
                             break
                         print(f"Sleeping 10s due to redis queue length ({dqlen} >= {args.maxq})")
                         time.sleep(10)
-                fraud_task.send(args.company)
-                r.rpush('af2gis:queue', args.company)
+                fraud_task.send(c.object_id)
+                r.rpush('af2gis:queue', c.object_id)
 
 
             elif args.cmd == "delreport":                
