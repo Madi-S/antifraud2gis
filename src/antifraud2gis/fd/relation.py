@@ -114,8 +114,8 @@ class RelationFD(BaseFD):
                     print(f"{idx}. {public_id} ({len(self.risk_users[public_id])}): {' '.join(self.risk_users[public_id])}", file=fh)
                 
                 print(f"{len(self.risk_users)} / {self.processed_users} = {self.score['risk_users']}%", file=fh)
-
+                print("", file=fh)
 
         for line in self.records:
             print(line, file=fh)
-
+            print("", file=fh)

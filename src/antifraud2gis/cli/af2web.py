@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Form, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -61,6 +61,18 @@ async def home(request: Request):
     )
 
 
+@app.get("/explain/{oid}", response_class=PlainTextResponse)
+async def explain(request: Request, oid: str):
+    try:
+        c = Company(oid)
+    except AFNoCompany:
+        return RedirectResponse(app.url_path_for("miss", oid=oid))
+
+    if c.explain_path.exists():
+        explanation = gzip.open(c.explain_path, "rt").read()
+        return PlainTextResponse(content=explanation)
+
+
 @app.get("/report/{oid}", response_class=HTMLResponse)
 async def report(request: Request, oid: str):
     try:
@@ -74,8 +86,6 @@ async def report(request: Request, oid: str):
             report = json.load(fh)
             # print_json(data=report)
             # print(report['relations'][0])
-
-
 
             for rel in report['relations']:
                 rep_path = settings.company_storage / (rel['oid'] + '-report.json.gz')

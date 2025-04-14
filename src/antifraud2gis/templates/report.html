@@ -32,7 +32,10 @@
                             <b>Аномалии:</b> {{' '.join(c.detections)}}
                         </a></p>
                     {% endif %}
+                    <p><a href="{{ request.url_for('explain', oid=c.object_id).path }}">Журнал расчета</a></p>
                     <p>Дата отчета: {{score.date}} </p>
+                    
+
                 </div> <!-- company info div -->
 
                 <div class="score {{divclass}}">

@@ -49,5 +49,6 @@ class MedianRPUFD(BaseFD):
         for line in self.records:
             print(line, file=fh)
 
-        print(f"RPUs ({self.score['median_rpu']}): {sorted(self.rpu)}")
-        print(f"result: {self.score['median_rpu']}")
+        print(f"RPUs ({self.score['median_rpu']}): {sorted(self.rpu)}", file=fh)
+        print(f"result: {self.score['median_rpu']}", file=fh)
+        print("", file=fh)        

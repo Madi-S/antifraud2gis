@@ -62,3 +62,4 @@ class EmptyUserFD(BaseFD):
             print(line, file=fh)
         print(f"Empty ratings ({len(self.empty_ratings)}): {self.empty_ratings}", file=fh)
         print(f"Not-empty ratings ({len(self.non_empty_ratings)}): {self.non_empty_ratings}", file=fh)
+        print("", file=fh)

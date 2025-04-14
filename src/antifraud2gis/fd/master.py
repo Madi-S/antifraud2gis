@@ -15,6 +15,7 @@ from .fd import BaseFD
 from .emptyuser import EmptyUserFD
 from .medianage import MedianAgeFD
 from .relation import RelationFD
+from ..settings import settings
 
 class MasterFD(BaseFD):
 
@@ -83,6 +84,7 @@ class MasterFD(BaseFD):
                 self.score['detections'].extend(detector_score['detections'])
 
         self.score['trusted'] = not self.score['detections']
+        self.score['param_fp'] = settings.param_fp()
         self.score['date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         return self.score
