@@ -7,7 +7,7 @@ from rich.text import Text
 from pathlib import Path
 
 from ..company import CompanyList, Company
-from ..user import User
+from ..user import User, reset_user_pool
 from ..settings import settings
 from ..fraud import detect, dump_report
 from ..exceptions import AFNoCompany
@@ -193,16 +193,23 @@ def main():
             return
 
         town = args.town.lower()
+        submitted = 0
 
-        for idx, u in enumerate(User.users()):
+
+        for u in User.users():
             for rev in u.reviews():
                 if rev.get_town().lower() != town:
                     continue
                 
                 if not cl.company_exists(rev.oid):
                     cooldown_queue(10)
-                    print("New company", rev.get_town(), rev.oid, rev.title)
+                    print(f"{submitted}: new company {rev.get_town()} {rev.oid} {rev.title}")
                     submit_fraud_task(rev.oid)
+
+                    submitted += 1
+
+                    if submitted % 20 == 0:
+                        reset_user_pool()
 
                 if stopfile.exists():
                     print("Stopfile found, exit")
