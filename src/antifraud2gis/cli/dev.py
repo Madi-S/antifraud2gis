@@ -15,7 +15,7 @@ from ..aliases import aliases
 from .summary import printsummary
 from ..tasks import submit_fraud_task, cooldown_queue
 from ..const import REDIS_TASK_QUEUE_NAME, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_WORKER_STATUS, REDIS_DRAMATIQ_QUEUE
-
+from ..logger import logger
 
 def countdown(n=5):
     for i in range(n, 0, -1):
@@ -195,7 +195,6 @@ def main():
         town = args.town.lower()
         submitted = 0
 
-
         for u in User.users():
             for rev in u.reviews():
                 if rev.get_town().lower() != town:
@@ -203,7 +202,13 @@ def main():
                 
                 if not cl.company_exists(rev.oid):
                     cooldown_queue(10)
-                    print(f"{submitted}: new company {rev.get_town()} {rev.oid} {rev.title}")
+                    try:
+                        c = Company(rev.oid)
+                    except AFNoCompany as e:
+                        logger.info(f"AFNoCompany {rev.oid} {rev.title}")
+                        continue
+
+                    logger.info(f"{submitted}: new company {rev.get_town()} {rev.oid} {rev.title}")
                     submit_fraud_task(rev.oid)
 
                     submitted += 1
@@ -212,7 +217,7 @@ def main():
                         reset_user_pool()
 
                 if stopfile.exists():
-                    print("Stopfile found, exit")
+                    logger.info("Stopfile found, exit")
                     stopfile.unlink()
                     return
             
