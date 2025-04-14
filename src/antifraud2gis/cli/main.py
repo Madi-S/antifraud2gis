@@ -99,6 +99,7 @@ def get_args():
     g.add_argument("-t", "--town", default=None, help="Filter by town")
     g.add_argument("-n", "--name", default=None, help="Filter by name (fnmatch)")
     g.add_argument("-l", "--limit", metavar='N', type=int, help="Limit to N companies")
+    g.add_argument("-d", "--detection", metavar='DETECTION', help="Only with this detection. also trusted, untrusted")
     g.add_argument("-c", "--company", metavar='OID', help="Company ID")
     g.add_argument("--report", default=None, action='store_true', help="Company has antifraud report")
     g.add_argument("--noreport", default=None, action='store_true', help="Company has NO antifraud report")
@@ -180,7 +181,7 @@ def main():
         total_processed = 0
         effectively_processed = 0
 
-        for c in cl.companies(oid=args.company, name=args.name, town=args.town, report=args.report, noreport=args.noreport):
+        for c in cl.companies(oid=args.company, name=args.name, town=args.town, detection=args.detection, report=args.report, noreport=args.noreport):
 
             total_processed += 1
 
@@ -218,6 +219,10 @@ def main():
                 print(f"Delete report for {c}")
                 c.report_path.unlink(missing_ok=True)
                 c.explain_path.unlink(missing_ok=True)
+                c.trusted = None
+                c.detections = list()
+                c.save_basic()
+
 
             elif args.cmd == "wipe":
                 if args.really:

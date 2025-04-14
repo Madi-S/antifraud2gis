@@ -419,7 +419,7 @@ class CompanyList():
         raise KeyError(f"Company {index} not found")
 
 
-    def companies(self, oid=None, name = None, town = None, report = None, noreport = None, limit=None):
+    def companies(self, oid=None, name = None, town = None, detection=None, report = None, noreport = None, limit=None):
         n = 0
 
         if oid:
@@ -429,7 +429,7 @@ class CompanyList():
                 # no review 70000001096097346
                 return
 
-            if company_match(c, oid=None, name=name, town=town, report=report, noreport=noreport):
+            if company_match(c, oid=None, name=name, town=town, detection=detection, report=report, noreport=noreport):
                 yield c
             return
 
@@ -437,7 +437,7 @@ class CompanyList():
             company_oid = f.name.split('-')[0]
             c = Company(company_oid)
             # print("created c", c.report_path)
-            if company_match(c, oid=oid, name=name, town=town, report=report, noreport=noreport):
+            if company_match(c, oid=oid, name=name, town=town, detection=detection, report=report, noreport=noreport):
                 yield c
                 n+=1
                 if limit and n==limit:
@@ -454,10 +454,24 @@ class CompanyList():
         else:
             return oid
 
-def company_match(c: Company, oid: str, name: str = None, town: str = None, report = None, noreport = None):
+def company_match(c: Company, oid: str, name: str = None, town: str = None, detection=None, report = None, noreport = None):
 
     if oid and c.object_id != oid:
         return False   
+
+    # print("??", detection)
+    # print(c.trusted)
+
+    if detection:
+        if detection == "trusted":
+            if not c.trusted:
+                return False
+        elif detection == "untrusted":
+            if not c.trusted is False:
+                return False
+        else:
+            if not detection in c.detections:
+                return False
 
     if report:
         if not c.report_path.exists():
