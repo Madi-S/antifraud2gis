@@ -39,21 +39,6 @@ class Review():
                 self.address = None
 
 
-    def is_visible(self):
-        return True
-
-        #if self.uid != '06ca4d2e9b404411b6e47bdb464cee8b':
-        #    return True
-        
-        c = Company(self.oid)
-        c.load_reviews()
-        cu = list(c.uids())
-        # print(cu)
-        
-        #print("VIS:", self.uid in cu)
-        #print("visible?", self.uid, self.oid)
-        return self.uid in cu
-
     @property
     def created_str(self):
         return self.created.strftime("%Y-%m-%d")
@@ -68,6 +53,17 @@ class Review():
     @property
     def user_url(self):
         return f'https://2gis.ru/x/user/{self.uid}'
+
+
+    def is_empty(self):
+        if self.uid is None:
+            return True
+
+        self.user.load()
+        if self.user.nreviews() <= 1:            
+            return True
+        
+        return False
 
 
     def __repr__(self):

@@ -20,137 +20,15 @@ from .user import User, get_user
 from .relation import RelationDict, _is_dangerous
 from .settings import settings
 from .exceptions import AFReportNotReady, AFNoCompany, AFReportAlreadyExists
+# from .usernotes import Usernotes
+from .fd.master import MasterFD
 
-def compare(a: Company, b: Company):
-
-    debug_oids = os.getenv("DEBUG_OIDS", "").split(" ")
-    debug_uids = os.getenv("DEBUG_UIDS", "").split(" ")
-
-
-    a.load_reviews()
-    b.load_reviews()
-
-    print("A:", a)
-    print("B:", b)
-    print("--")
-
-    common = 0
-
-    aset = set()
-    bset = set()
-
-    aratings = list()
-    bratings = list()
-
-    """ fill sets for a/b based on company reviews BUT often user is not found there (because not in first 500 reviews or other reason) """
-    for r in a.reviews():
-        if r.uid is None:
-            continue
-        if r.uid in debug_uids:
-            print(f"bset1 add: {r}")
-        aset.add(r.uid)
-
-    for r in b.reviews():
-        if r.uid is None:
-            continue
-        if r.uid in debug_uids:
-            print(f"aset1 add: {r}")
-        bset.add(r.uid)
-
-    """ add a/b set from users's reviews (not company's reviews) """
-    for uid in aset | bset:
-        u = get_user(uid)
-        u.load()
-
-        if uid in debug_uids:
-            print(f"USER: {u}")
-
-        for r in u.reviews():
-            if r.oid == a.object_id:
-                if r.uid in debug_uids:
-                    if r not in aset:
-                        print(f"aset add: {r}")
-
-                aset.add(uid)
-            if r.oid == b.object_id:
-                if r.uid in debug_uids:
-                    if r not in bset:
-                        print(f"bset add: {r}")
-                bset.add(uid)
-
-    reviews_for_user = list()
-
-    ab = aset & bset
-    n_private = 0
-
-    user_ages_a=list()
-    user_ages_b=list()
-
-    a_oldest = None
-    a_newest = None
-    b_oldest = None
-    b_newest = None
-
-    printn = 0
-    for uid in ab:
-        if db.is_private_profile(uid):
-            n_private += 1
-            continue
-
-        u = get_user(uid)
-        reviews_for_user.append(u.nreviews())
-        #ar = u.review_for(a.object_id)
-        #br = u.review_for(b.object_id)
-
-        # review could be missing either from user (if private) or company (if hit reviews limit)
-        arev = a.review_from(uid) or u.review_for(a.object_id)
-        brev = b.review_from(uid) or u.review_for(b.object_id)
-
-        user_ages_a.append(arev.user_age)
-        user_ages_b.append(brev.user_age)
-
-        if a_oldest is None or arev.created < a_oldest:
-            a_oldest = arev.created
-        if a_newest is None or arev.created > a_newest:
-            a_newest = arev.created 
-        
-        if b_oldest is None or brev.created < b_oldest:
-            b_oldest = brev.created
-        if b_newest is None or brev.created > b_newest:
-            b_newest = brev.created
-
-        if arev is None or brev is None:
-            print(f"ERROR: {u} {arev} {brev}")            
-            sys.exit(1)
-
-        if arev:
-            aratings.append(arev.rating)
-        if brev:
-            bratings.append(brev.rating)
-
-        
-        printn += 1
-        print(f"{printn}: {arev.rating}/{brev.rating} age:{arev.user_age}/{brev.user_age} {u}")
-        # print(f"  {u.birthday_str} {arev.created_str} {brev.created_str}")
-            
-    aavg = round(float(np.mean(aratings)), 2)
-    bavg = round(float(np.mean(bratings)), 2)
-
-    print("--")
-    print(f"common: {len(ab)} users, private: {n_private}")
-    print(f"reviews: {len(reviews_for_user)}")
-    print(f"mean num reviews: {round(float(np.mean(reviews_for_user)), 2)} median: {round(float(np.median(reviews_for_user)),3)}")
-    print(f"avg rating {a.get_title()}: {aavg} avg raging {b.get_title( )}: {bavg}")
-    print(f"User ages for A mean: {int(np.mean(user_ages_a))} median: {int(np.median(user_ages_a))}")
-    print(f"User ages for B mean: {int(np.mean(user_ages_b))} median: {int(np.median(user_ages_b))}")
-    print(f"A reviews: {a_oldest.strftime('%Y-%m-%d')} .. {a_newest.strftime('%Y-%m-%d')}")
-    print(f"B reviews: {b_oldest.strftime('%Y-%m-%d')} .. {b_newest.strftime('%Y-%m-%d')}")
-
-
-def detect(c: Company, cl: CompanyList, explain: str = None, force=False):
+def detect(c: Company, cl: CompanyList, explain: bool = False, force=False):
 
     debug_oids = os.getenv("DEBUG_OIDS", "").split(" ")
     debug_uids = os.getenv("DEBUG_UIDS", "").split(" ")
+
+    # notes = Usernotes()
 
     if c.report_path.exists() and not force and not explain:
         raise AFReportAlreadyExists(f"Report already exists: {c.report_path}")
@@ -173,7 +51,6 @@ def detect(c: Company, cl: CompanyList, explain: str = None, force=False):
     c.load_reviews()
     c.load_users()
 
-
     """ skip too small targets """
     if c.nreviews() <= settings.min_reviews:
         # bypass
@@ -192,279 +69,47 @@ def detect(c: Company, cl: CompanyList, explain: str = None, force=False):
         return score
             # print("saved")
 
-
-
     logger.info(f"Run fraud detect for {c.title} ({c.address}) {c.object_id} {c.nreviews()} reviews")
 
-    c_hits = defaultdict(int)
-    c_weight = defaultdict(int)
-
-    user_ages = list()
-
-    processed_users = 0
-    skipped_users = 0
-    processed_reviews = 0
-
-    skipped_users_ratings = list()
-
-    # We should have our own numbers/per reviews list to catch users with 1 review. Relations will not catch it.
-    nrlist = list()
-
-
-    """
-        with Progress() as progress:
-            task = progress.add_task("[cyan]Loading user's reviews...", total=len(self._reviews))
-
-            for idx, r in enumerate(self._reviews):
-                progress.update(task, advance=1, description=f"[green]User {idx}")
-                upid = r['user']['public_id']
-    """
+    master_detector = MasterFD(c, explain=True)
 
     with Progress() as progress:
         task = progress.add_task("[cyan]Analyzing user's reviews...", total=c.nreviews())
 
-        for idx, cr in enumerate(c.reviews()):
+        for idx, cr in enumerate(c.reviews(), start=1):
+            # notes.counter('total_reviews')
             progress.update(task, advance=1, description=f"[green]User {idx}")
 
-            if cr.age > settings.max_review_age:
-                # too old review, safely skip it
-                # print("Skip review", cr)
+            master_detector.feed(cr)    
 
-                if explain == 'median_user_age':
-                    print(f"EXPLANATION: Skip too old ({cr.age} > {settings.max_review_age}) review: {cr}")
-                continue
-
-            if cr.uid is None:
-                # print("!! Skip review without user", cr)
-
-                skipped_users += 1
-
-                skipped_users_ratings.append(cr.rating)
-                if explain in ['median_user_age', 'empty_user_ratio']:
-                    print(f"EXPLANATION: Skip ({skipped_users}) anon (no-user) review: {cr}")
-
-                continue
-            u = cr.user
-            u.load()
-            if u.nreviews() <= 1:
-                skipped_users += 1
-                skipped_users_ratings.append(cr.rating)
-                if explain in ['median_user_age', 'empty_user_ratio']:
-                    print(f"EXPLANATION: Skip ({skipped_users}) anon (no-user) review: {cr}")
-                    print(f"!! Skip user {u} with 0 reviews")
-                continue
-
-            else:
-                # u.nreviews > 1
-
-                nrlist.append(u.nreviews())
-                if u.public_id in debug_uids:
-                    print(f"!! DEBUG: {u}")
-                
-                if u.nreviews() > MAX_USER_REVIEWS:
-                    skipped_users += 1
-                    skipped_users_ratings.append(cr.rating)
-
-                    if explain in ['median_user_age', 'empty_user_ratio']:
-                        print(f"EXPLANATION: Skip ({skipped_users}) review from extremely active user ({u.nreviews()} > {MAX_USER_REVIEWS}): {u}")
-
-                    # print(f"Skip user {u} with {u.nreviews()} reviews")
-                    continue
-
-
-                if cr.rating >= settings.risk_highrate_th:
-                    user_age = (cr.created - u.birthday()).days
-                    user_ages.append(user_age)
-
-                    if explain == 'median_user_age':
-                        print(f"EXPLANATION: Add user age {user_age} for {u}. Review created: {cr.created_str}, user 1st review: {u.birthday_str}")
-
-                # only for open profiles
-                for r in u.reviews():
-
-                    if not r.is_visible():
-                        # print("invisibe")
-                        continue
-
-                    if r.oid == c.object_id:
-                        # print("same object")
-                        continue
-
-                    # print("  review:", r)
-
-                    rel = c.relations[r.oid]
-                    rel.hit(cr.rating, r)
-                    ## next two lines, + import addr/title from rel
-                    # rel.inc()
-                    # rel.add_user(u, cr.rating, r.rating)
-
-                    c_hits[r.oid] += 1
-                    c_weight[r.oid] += 1/u.nreviews()
-
-                    #if r.oid in debug_oids:
-                    #    print(f"{1/u.nreviews():.2f} {u}")
-
-                    processed_reviews += 1
-
-                processed_users += 1
-
-    if False:
-        if c.object_id in c_hits:
-            del c_hits[c.object_id]
-        if c.object_id in c_weight:
-            del c_weight[c.object_id]
-
-    c_weight = {k: v/c_hits[k] for k, v in c_weight.items()}
-
-    wscore_sum = 0
-    for _oid, score in c_weight.items():
-        if score > WSCORE_THRESHOLD and c_hits[_oid] >= WSCORE_HITS_THRESHOLD:
-            wscore_sum += score
+    score = master_detector.get_score()
     
-    # print_json(data=c_weight[:5])
-
-    n_neighbours = len(c_hits)
-
-    if n_neighbours == 0:
-        c.error = "no neighbours"
-        c.save_basic()
-        return
-
-    neigh_review_ratio = n_neighbours / c.nreviews()
-    
-    # print(n_neighbours, c.nreviews())
-
-    twin_score = 0
-    for k, v in c_hits.items():
-        twin_score += v - 1
-
-    # print(f"HITS (rev:{c.nreviews()} / neigh:{n_neighbours})")
-    
-    c.relations.calc()
-
-    trusted_ratings = list()
-    tr_c = 0
-    untr_c = 0
-    for cr in c.reviews():
-        if cr.uid is not None and cr.uid not in c.relations.dangerous_users:
-            trusted_ratings.append(cr.rating)
-            tr_c +=1 
-        else:
-            untr_c +=1
-
-
-    # check towns
-
-    # print(f"{tr_c=}, {untr_c=}")
-
-    # tmp: always on
-
-    towns = set()
-    titles = set()
-    hirel = 0
-    for rel in c.relations.relations.values():
-        if rel.check_high_hits():
-            if rel.check_high_ratings():
-                hirel += 1
-                towns.add(rel.get_btown())
-                titles.add(rel.get_btitle())                
-
-    low_nrlist = list(filter(lambda x: x <= settings.risk_median_rpu, nrlist))
-
-    score = dict()
-
-
-    if explain == 'median_user_age':
-        print(f"EXPLANATION Calculate median for ({len(user_ages)}): {sorted(user_ages)}")
-        print(f"EXPLANATION: median: {int(np.median(user_ages)) if user_ages else None}, threshold: {settings.median_user_age}")
-
-    elif explain == "empty_user_ratio":
-        print(f"EXPLANATION: skipped: {skipped_users}, processed: {processed_users}")
-        print(f"EXPLANATION: empty_user_ratio: ({skipped_users}/{processed_users + skipped_users}) ({int(100 * skipped_users / (processed_users + skipped_users))}%) > {settings.risk_empty_user_ratio}")
-
-    #score['NR'] = round(neigh_review_ratio,3)
-    #score['TwinScore'] = round(twin_score/n_neighbours,3)
-    #score['WSS'] = round(wscore_sum,3)
-    #score['DoubleMedian'] = int(c.relations.doublemedian)
-    score['NDangerous'] = c.relations.ndangerous
-    score['nrisk_users'] = c.relations.nrisk_users
-    score['total_users'] = processed_users + skipped_users 
-    score['processed_users'] = processed_users 
-    score['skipped_users'] = skipped_users 
-    score['empty_user_ratio'] = int(100 * skipped_users / (processed_users + skipped_users))
-    score['date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    score['param_fp'] = settings.param_fp()
-    score['median_reviews_per_user'] = round(float(np.median(nrlist)), 1)
-
-    score['high_hit_relations'] = hirel
-    score['high_hit_towns'] = len(towns)
-    score['high_hit_titles'] = len(titles)
-
-    score['happy_long_rel'] = int(100*len(towns)/hirel) if hirel > 0 else 0
-    score['sametitle_rel'] = int(100*len(titles)/hirel) if hirel > 0 else 0
-
-
-
-    score['median_user_age'] = int(np.median(user_ages)) if user_ages else None
-    
-
-
-
-    if skipped_users_ratings:
-        score['empty_user_avg_rate'] = round(float(np.mean(skipped_users_ratings)), 2)
-    else:
-        score['empty_user_avg_rate'] = None
-
-
-    # c.score['full_rate'] = c.count_rate()
-    # c.score['trusted_rate'] = round(float(np.mean(trusted_ratings)),2)
-
-    # make verdict
-    if score['empty_user_ratio'] > settings.risk_empty_user_ratio:
-        score['trusted'] = False
-        score['reason'] = f"empty_user_ratio {score['empty_user_ratio']}% ({skipped_users}/{processed_users + skipped_users}) ({score['empty_user_avg_rate']})"
-
-    elif c.relations.nrisk_users > settings.risk_user_ratio:
-        score['trusted'] = False
-        score['reason'] = f"risk_users {c.relations.nrisk_users}% ({len(c.relations.dangerous_users)} / {c.relations.nusers})"
-
-    elif score['median_reviews_per_user'] <= settings.risk_median_rpu:
-        score['trusted'] = False
-        score['reason'] = f"median_reviews_per_user {score['median_reviews_per_user']} <= {settings.risk_median_rpu} ({len(low_nrlist)} of {len(nrlist)} are <= {settings.risk_median_rpu})"
-
-    elif len(towns) >= settings.happy_long_rel_min_towns_th \
-            and score['happy_long_rel'] >= settings.happy_long_rel_th:
-        score['trusted'] = False
-        score['reason'] = f"happy_long_rel {score['happy_long_rel']}% ({len(towns)} of {hirel})"
-
-    elif hirel >= settings.sametitle_rel and score['sametitle_rel'] <= settings.sametitle_ratio:
-        score['trusted'] = False
-        score['reason'] = f"sametitle_rel {score['sametitle_rel']}% ({hirel} of {len(titles)})"
-
-    elif len(user_ages) > settings.median_user_age_nusers and score['median_user_age'] <= settings.median_user_age:
-        score['trusted'] = False
-        score['reason'] = f"median_user_age {score['median_user_age']} <= {settings.median_user_age} ({sum(a <= settings.median_user_age for a in user_ages)} of {len(user_ages)})"
-    else:
-        score['trusted'] = True
 
     # logger.info(f"SCORE: {score} for {c.object_id}")
-
 
     report = dict()
     report['score'] = score
     report['relations'] = c.relations.export()
 
-    # print(f"save {len(report['relations'])} relations to {c.report_path}")
-
     with gzip.open(c.report_path, "wt") as fh:
         json.dump(report, fh)
-        # print("saved")
 
+    if not score['trusted']:
+        print(f"save explain to {c.explain_path}")    
+        with gzip.open(c.explain_path, "wt") as fh:            
+            master_detector.explain(fh=fh)
+
+    c.trusted = score['trusted']
+    c.detections = [ dline.split(' ')[0] for dline in score['detections'] ]
     c.save_basic()
+
+    print_json(data=score)
+
     if score['trusted']:
         trust_line = "TRUSTED"
     else:
-        trust_line = f"RISK {score['reason']}"
+        dnames = [ dline.split(' ')[0] for dline in score['detections'] ]
+        trust_line = f"RISK {len(dnames)} {'+'.join(dnames)}"
 
     logger.info(f"DETECTION RESULT {c} {trust_line}")
     return score

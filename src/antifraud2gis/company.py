@@ -42,6 +42,7 @@ class Company:
         self.reviews_path = settings.company_storage / (object_id + '-reviews.json.gz')
         self.basic_path = settings.company_storage / (object_id + '-basic.json.gz')
         self.report_path = settings.company_storage / (object_id + '-report.json.gz')
+        self.explain_path = settings.company_storage / (object_id + '-explain.txt.gz')
         self.loaded_from_disk = False
 
         self._reviews = list()
@@ -62,13 +63,10 @@ class Company:
         self.branch_count_2gis = None
         self.branch_rating_2gis = None
 
-        # ratings
-        # self.score = dict()
-        # self.score['NR'] = None
-        # self.score['TwinScore'] = None
-        # self.score['WSS'] = None
-
         self.frozen = False
+
+        self.trusted = None
+        self.detections = list()
 
         self.load_basic()
         self.relations = None
@@ -80,7 +78,8 @@ class Company:
         filelist =  [ 
             settings.company_storage / (object_id + '-reviews.json.gz'),
             settings.company_storage / (object_id + '-basic.json.gz'),
-            settings.company_storage / (object_id + '-report.json.gz') 
+            settings.company_storage / (object_id + '-report.json.gz'),
+            settings.company_storage / (object_id + '-explain.txt.gz'),
             ]
         
         for f in filelist:
@@ -120,13 +119,14 @@ class Company:
                 self.remark = _basic['remark']
                 self.address = _basic.get('address')
                 self.version = _basic.get('version', 0)
-                # self.score = _basic.get('score', dict())
                 self.error = _basic.get('error', None)
                 self.frozen = _basic.get('frozen', False)
                 self.tags = _basic.get('tags', None)
                 self.total_count_2gis = _basic.get('total_count_2gis', None)
                 self.branch_count_2gis = _basic.get('branch_count_2gis', None)
                 self.branch_rating_2gis = _basic.get('branch_rating_2gis', None)
+                self.trusted = _basic.get('trusted', None)
+                self.detections = _basic.get('detections', list())
                 if not self.title:
                     # logger.debug(f"no title for {self.object_id}")
                     pass
@@ -144,12 +144,14 @@ class Company:
                 'alias': self.alias,
                 'remark': self.remark,
                 'address': self.address,
+                'trusted': self.trusted,
                 # 'score': self.score,
                 'error': self.error,
                 'frozen': self.frozen,
                 'total_count_2gis': self.total_count_2gis,
                 'branch_count_2gis': self.branch_count_2gis,
-                'branch_rating_2gis': self.branch_rating_2gis
+                'branch_rating_2gis': self.branch_rating_2gis,
+                'detections': self.detections
             }
             if self.tags:
                 basic['tags'] = self.tags
@@ -311,7 +313,12 @@ class Company:
         if self.frozen:
             tags += "[FROZEN]"
 
-        return f'Company({self.object_id} rate: {self.branch_rating_2gis} {titlestr} addr: {self.address} reviews:{len(self._reviews) if self._reviews else "not loaded"}{tags})'
+        if self.trusted:
+            trusted_line = "TRUSTED"
+        else:
+            trusted_line = f"RISK ({'+'.join(self.detections)})"
+
+        return f'Company({self.object_id} rate: {self.branch_rating_2gis} {titlestr} addr: {self.address} reviews:{len(self._reviews) if self._reviews else "not loaded"}{tags} {trusted_line})'
 
     def get_title(self):
         return self.title or self.object_id
@@ -331,11 +338,11 @@ class Company:
             'town': self.get_town(),
             'searchstr': f"{self.get_town()} {self.title}",
             'rating_2gis': self.branch_rating_2gis,
-            'trusted': None,
+            'trusted': self.trusted,
             'nreviews': self.nreviews(),
         }
-
-        if self.report_path.exists():
+        
+        if self.trusted is None and self.report_path.exists():
             with gzip.open(self.report_path, 'rt') as f:
                 report = json.load(f)
                 data['trusted'] = report["score"]['trusted']

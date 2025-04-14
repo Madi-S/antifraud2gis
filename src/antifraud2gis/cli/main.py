@@ -18,11 +18,12 @@ from pathlib import Path
 
 from ..company import Company, CompanyList
 from ..user import User
-from ..fraud import detect, compare, dump_report
+from ..fraud import detect, dump_report
+from ..compare import compare
 from ..tasks import fraud_task
 from ..logger import loginit, logger, testlogger
 from ..db import db
-from ..const import SUMMARY_PERIOD
+from ..const import REDIS_DRAMATIQ_QUEUE
 from ..exceptions import AFNoCompany, AFReportNotReady, AFReportAlreadyExists
 from ..settings import settings
 from ..statistics import statistics
@@ -30,10 +31,12 @@ from ..aliases import resolve_alias
 from ..search import search
 
 # CLI
-from .summary import add_summary_parser, handle_summary, printsummary
-from .company import add_company_parser, handle_company
-from .user import add_user_parser, handle_user
-from .dev import add_dev_parser, handle_dev
+from .summary import printsummary
+
+# from .summary import add_summary_parser, handle_summary, printsummary
+#from .company import add_company_parser, handle_company
+#from .user import add_user_parser, handle_user
+#from .dev import add_dev_parser, handle_dev
 
 last_summary = 0
 
@@ -105,6 +108,7 @@ def get_args():
     g.add_argument("-s", "--show", metavar='N', type=int, help="Show links with N hits")
     g.add_argument("--overwrite", default=None, action='store_true', help="Recalculate even if fraud report exists")
     g.add_argument("--explain", default=False, action='store_true', help="Re-run fraud detection with explanation")
+    g.add_argument("--maxq", metavar='N', default=None, type=int, help="Sleep if redis queue is over N")
 
     return parser.parse_args()
 
@@ -142,6 +146,7 @@ def main():
     elif args.cmd == "info":
         c = Company(args.company)
         basic = json.load(gzip.open(c.basic_path))
+        print(c)
         print_json(data=basic)
 
         try:
@@ -190,25 +195,20 @@ def main():
                 if args.show:
                     settings.show_hit_th = args.show
                 try:
-                    if args.explain:
-
-                        if not c.report_path.exists():
-                            print("No report yet, running fraud first...")
-                            detect(c, cl)
-
-                        report = json.load(gzip.open(c.report_path))
-                        reason = report['score']['reason'].split(' ')[0]
-                    else:
-                        reason=None
-
-                    detect(c, cl, explain=reason, force=args.overwrite)
+                    detect(c, cl, explain=args.explain, force=args.overwrite)
                     effectively_processed += 1
                 except AFReportAlreadyExists as e:
                     print(f"Report already exists for {c} and no --overwrite")
                 dump_report(c.object_id)
 
             elif args.cmd == "submitfraud":
-                print(f"Submit fraud report request for {c}")
+                if args.maxq:
+                    while True:
+                        dqlen = r.llen(REDIS_DRAMATIQ_QUEUE) 
+                        if dqlen < args.maxq:
+                            break
+                        print(f"Sleeping 10s due to redis queue length ({dqlen} >= {args.maxq})")
+                        time.sleep(10)
                 fraud_task.send(args.company)
                 r.rpush('af2gis:queue', args.company)
 
@@ -216,6 +216,7 @@ def main():
             elif args.cmd == "delreport":                
                 print(f"Delete report for {c}")
                 c.report_path.unlink(missing_ok=True)
+                c.explain_path.unlink(missing_ok=True)
 
             elif args.cmd == "wipe":
                 if args.really:

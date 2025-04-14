@@ -119,10 +119,7 @@ class Relation:
         """
     
         if riskname == "ANY":
-            if settings.deep_check:                
-                return any([self.is_risk('HR'), self.is_risk('TITLE')])
-            else:
-                return self.is_risk('HR')
+            return self.is_risk('HR')
             
                 
 
@@ -330,7 +327,7 @@ class RelationDict:
             try:
                 _c = Company(rel.b)
             except AFNoCompany:
-                print(f"Ignore NO-COMPANY {rel.b} with {rel.count} hits")
+                # print(f"Ignore NO-COMPANY {rel.b} with {rel.count} hits")
                 continue
             data = dict()
             data['tags'] = _c.tags
