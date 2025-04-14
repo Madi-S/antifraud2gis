@@ -42,7 +42,12 @@ def fraud_task(oid: str):
     #with lock.acquire():
     r.lrem(REDIS_TASK_QUEUE_NAME, count=1, value=oid)
     
-    c = Company(oid)
+    try:
+        c = Company(oid)
+    except AFNoCompany as e:
+        logger.warning(f"Worker: Company {oid!r} not found")
+        return
+    
     cl = CompanyList()
     
     if c.error:
