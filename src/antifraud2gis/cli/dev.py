@@ -189,6 +189,6 @@ def main():
         print("Queue report")
         print(f"Worker status: {wstatus}")
         print(f"Dramatiq queue: {dqlen}")
-        print(f"Tasks ({len(tasks)}): {tasks}")
+        print(f"Tasks ({len(tasks)}): {tasks[:5]} ")
         print(f"Trusted ({trusted_len})")
         print(f"Untrusted ({untrusted_len})")

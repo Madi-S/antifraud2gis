@@ -5,6 +5,7 @@ from rich import print_json
 import sys
 import json
 import gzip
+import datetime
 
 from ..company import Company
 from ..user import User
@@ -82,6 +83,7 @@ class MasterFD(BaseFD):
                 self.score['detections'].extend(detector_score['detections'])
 
         self.score['trusted'] = not self.score['detections']
+        self.score['date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         return self.score
 

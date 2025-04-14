@@ -26,18 +26,27 @@
                     {% if score.trusted %}
                         <p class="green">Аномалий в отзывах не обнаружено</p>
                     {% else %}
-                        <p class="red"><b>В отзывах есть статистическая аномалия</b></p>
+                        <p class="red"><b>В отзывах есть статистические аномалии</b></p>
                         <p class="red">
                             <a href="{{ request.url_for('md_page', page='anomaly').path }}">
-                            <b>Аномалия:</b> {{score.reason}}
+                            <b>Аномалии:</b> {{' '.join(c.detections)}}
                         </a></p>
                     {% endif %}
                     <p>Дата отчета: {{score.date}} </p>
                 </div> <!-- company info div -->
 
                 <div class="score {{divclass}}">
+                    {% if score.detections %}
+                    <p>Detections:</p>
+                    <ul>
+                        {% for d in score.detections %}
+                        <li>{{d}}</li>
+                        {% endfor %}
+                    </ul>
+
+                    {% endif %}
                     {% for key, value in score.items() %}
-                        {% if key != "param_fp" and key != "trusted" and key != "date" and key != "reason" %}
+                        {% if key != "param_fp" and key != "trusted" and key != "date" and key != "detections" %}
                             <p>{{key}}: {{value}}</p>
                         {% endif %}
                     {% endfor%}    
