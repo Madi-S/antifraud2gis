@@ -313,10 +313,13 @@ class Company:
         if self.frozen:
             tags += "[FROZEN]"
 
-        if self.trusted:
-            trusted_line = "TRUSTED"
+        if self.trusted is None:
+            trusted_line = "?"
         else:
-            trusted_line = f"RISK ({'+'.join(self.detections)})"
+            if self.trusted:
+                trusted_line = "TRUSTED"
+            else:
+                trusted_line = f"RISK ({'+'.join(self.detections)})"
 
         return f'Company({self.object_id} rate: {self.branch_rating_2gis} {titlestr} addr: {self.address} reviews:{len(self._reviews) if self._reviews else "not loaded"}{tags} {trusted_line})'
 

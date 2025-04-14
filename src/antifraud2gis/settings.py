@@ -44,7 +44,7 @@ class Settings():
         # 5 years old maximum 365*5=1825
         self.max_review_age = int(os.getenv('MAX_REVIEW_AGE', '1825'))
 
-        self.median_user_age = int(os.getenv('MEDIAN_USER_AGE', '60'))
+        self.median_user_age = int(os.getenv('MEDIAN_USER_AGE', '30'))
         self.median_user_age_nusers = int(os.getenv('MEDIAN_USER_AGE_NUSERS', '10'))
 
         self.proxy = os.getenv('HTTPS_PROXY', None)
