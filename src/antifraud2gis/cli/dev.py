@@ -4,6 +4,7 @@ import random
 import pkg_resources
 import redis
 from rich.text import Text
+from pathlib import Path
 
 from ..company import CompanyList, Company
 from ..user import User
@@ -12,24 +13,15 @@ from ..fraud import detect, dump_report
 from ..exceptions import AFNoCompany
 from ..aliases import aliases
 from .summary import printsummary
+from ..tasks import submit_fraud_task, cooldown_queue
 from ..const import REDIS_TASK_QUEUE_NAME, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_WORKER_STATUS, REDIS_DRAMATIQ_QUEUE
+
 
 def countdown(n=5):
     for i in range(n, 0, -1):
         print(f'\rCountdown: {i}', end=" ", flush=True)
         time.sleep(1)
     print()
-
-
-def add_dev_parser(subparsers):
-    dev_parser = subparsers.add_parser("dev", help="debug utilities for developer")
-    # dev_parser.add_argument("args", nargs=argparse.REMAINDER)
-    dev_parser.add_argument("cmd", choices=['delerror', 'reinit', 'findnew', 'location', 'tmp'])
-    dev_parser.add_argument("--real", default=False, action='store_true', help='Run dangerous operation for real (otherwise - dry run)')
-    dev_parser.add_argument("--now", default=False, action='store_true', help='No countdown, run immediately')
-    dev_parser.add_argument("args", nargs='*', help='extra args')
-
-    return dev_parser
 
 
 def reinit(cl: CompanyList):
@@ -132,7 +124,7 @@ def handle_dev(args: argparse.Namespace):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("cmd", choices=['company-users', 'user-reviews', 'queue'])
+    parser.add_argument("cmd", choices=['company-users', 'user-reviews', 'queue', 'explore'])
     parser.add_argument("-v", "--verbose", default=False, action='store_true')
     parser.add_argument("--full", default=False, action='store_true')
     parser.add_argument("args", nargs='*', help='extra args')
@@ -155,6 +147,7 @@ def get_args():
 def main():
     args = get_args()
     cl = CompanyList()
+    stopfile = Path('~/.af2gis-stop').expanduser()
 
     cmd = args.cmd
 
@@ -192,3 +185,28 @@ def main():
         print(f"Tasks ({len(tasks)}): {tasks[:5]} ")
         print(f"Trusted ({trusted_len})")
         print(f"Untrusted ({untrusted_len})")
+
+    elif cmd == "explore":
+
+        if args.town is None:
+            print("Need a town to explore")
+            return
+
+        town = args.town.lower()
+
+        for idx, u in enumerate(User.users()):
+            for rev in u.reviews():
+                if rev.get_town().lower() != town:
+                    continue
+                
+                if not cl.company_exists(rev.oid):
+                    cooldown_queue(10)
+                    print("New company", rev.get_town(), rev.oid, rev.title)
+                    submit_fraud_task(rev.oid)
+
+                if stopfile.exists():
+                    print("Stopfile found, exit")
+                    stopfile.unlink()
+                    return
+            
+

@@ -65,6 +65,11 @@ class Review():
         
         return False
 
+    def get_town(self) -> str: 
+        if self.address is None:
+            return None
+        return self.address.split(',')[0].replace(u'\xa0', u' ')
+
 
     def __repr__(self):
         # print_json(data=self._data)

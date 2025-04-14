@@ -20,7 +20,7 @@ from ..company import Company, CompanyList
 from ..user import User
 from ..fraud import detect, dump_report
 from ..compare import compare
-from ..tasks import fraud_task
+from ..tasks import submit_fraud_task, cooldown_queue
 from ..logger import loginit, logger, testlogger
 from ..db import db
 from ..const import REDIS_DRAMATIQ_QUEUE
@@ -117,7 +117,7 @@ def get_args():
 def main():
     args = get_args()
 
-    stopfile = Path('.stop')
+    stopfile = Path('~/.af2gis-stop').expanduser()
     
     r = redis.Redis(decode_responses=True)
 
@@ -128,7 +128,7 @@ def main():
 
     if args.cmd == "stop":
         stopfile.touch()
-        print("Stopfile created in current directory")
+        print(f"Stopfile {stopfile} created")
 
     elif args.cmd == "summary":
         if args.fmt == 'full':
@@ -204,15 +204,9 @@ def main():
 
             elif args.cmd == "submitfraud":
                 if args.maxq:
-                    while True:
-                        dqlen = r.llen(REDIS_DRAMATIQ_QUEUE) 
-                        if dqlen < args.maxq:
-                            break
-                        print(f"Sleeping 10s due to redis queue length ({dqlen} >= {args.maxq})")
-                        time.sleep(10)
+                    cooldown_queue(args.maxq)
                 print("submit fraud request for", c)
-                fraud_task.send(c.object_id)
-                r.rpush('af2gis:queue', c.object_id)
+                submit_fraud_task(oid = c.object_id)
 
 
             elif args.cmd == "delreport":                

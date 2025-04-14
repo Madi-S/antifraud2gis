@@ -8,7 +8,7 @@ from .fraud import detect
 from .company import CompanyList, Company
 from .exceptions import AFNoCompany, AFReportAlreadyExists
 from .logger import logger
-from .const import REDIS_WORKER_STATUS, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_TASK_QUEUE_NAME
+from .const import REDIS_WORKER_STATUS, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_TASK_QUEUE_NAME, REDIS_DRAMATIQ_QUEUE
 from .user import reset_user_pool
 from .statistics import statistics
 
@@ -24,6 +24,13 @@ r.set(REDIS_WORKER_STATUS, f'started...')
 
 started = time.time()
 processed = 0
+
+def get_qsize():
+    return r.llen(REDIS_DRAMATIQ_QUEUE)    
+
+def cooldown_queue(maxq: int):
+    while get_qsize() > maxq:
+        time.sleep(10)
 
 @dramatiq.actor
 def fraud_task(oid: str):
@@ -80,4 +87,8 @@ def fraud_task(oid: str):
     logger.info(f"Worker total: {processed} tasks in {int(time.time() - started)} sec")
     logger.info(statistics)
 
+
+def submit_fraud_task(oid: str):
+    fraud_task.send(oid)
+    r.rpush(REDIS_TASK_QUEUE_NAME, oid)
 

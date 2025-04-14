@@ -45,8 +45,6 @@ class User:
         self._reviews = list()
         self.load(local_only=True)
 
-
-
     def load(self, local_only=False):
         if self._reviews:
             # already loaded
@@ -80,7 +78,15 @@ class User:
         self.load()
         r = Review(sorted(self._reviews, key=lambda r: r['date_created'])[0])
         return r.created
-            
+
+    def towns(self):
+        self.load()
+        towns = set()
+        for r in self.reviews():
+            print_json(data=r)
+            towns.add(r.oid)
+        return towns
+
     @property
     def birthday_str(self):
         return self.birthday().strftime("%Y-%m-%d")
@@ -180,6 +186,10 @@ class User:
         else:
             return None
 
+    @staticmethod
+    def users():
+        for file in settings.user_storage.glob('*-reviews.json.gz'):
+            yield User(file.stem.split('-')[0])
 
     def __repr__(self):
         return f'User({self.name} (rev: {len(self._reviews) if self._reviews else "not loaded"}) {self.url})'
