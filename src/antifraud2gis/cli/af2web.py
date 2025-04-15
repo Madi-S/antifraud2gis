@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from typing import Optional
 
 from pathlib import Path
 from dotenv import load_dotenv
@@ -15,6 +16,7 @@ import importlib.resources
 import redis
 import markdown
 import frontmatter
+import requests
 
 from dramatiq import get_broker
 
@@ -22,7 +24,7 @@ from rich import print_json
 
 from ..company import Company, CompanyList
 from ..exceptions import AFReportNotReady, AFNoCompany
-from ..tasks import fraud_task
+from ..tasks import submit_fraud_task, get_qsize
 from ..settings import settings
 from ..const import REDIS_TASK_QUEUE_NAME, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_WORKER_STATUS
 from ..search import search
@@ -105,6 +107,7 @@ async def report(request: Request, oid: str):
                     "request": request,
                     "settings": settings,
                     "c": c,
+                    "oid": c.object_id,
                     "title": c.title,
                     "score": report['score'],
                     "relations": report['relations'],
@@ -145,6 +148,7 @@ async def miss(request: Request, oid: str):
     return templates.TemplateResponse(
         "miss.html", {
             "request": request, "title": c.title, "oid": c.object_id,   
+            "settings": settings,
             "trusted": last_trusted,
             "untrusted": last_untrusted
         }
@@ -152,9 +156,61 @@ async def miss(request: Request, oid: str):
 
 
 @app.post("/submit", response_class=HTMLResponse)
-async def submit(request: Request, oid: str = Form(...)):
-    fraud_task.send(oid)
-    r.rpush('af2gis:queue', oid)
+async def submit(request: Request, oid: str = Form(...), force: bool = Form(False), 
+                 cf_token: Optional[str] = Form(default=None, alias="cf-turnstile-response"),):
+
+    try:
+        c = Company(oid)
+    except (AFNoCompany) as e:
+        return templates.TemplateResponse(
+            "nocompany.html", {
+                "request": request, "oid": oid,
+            }
+        )
+    
+    if settings.turnstile_sitekey:
+        # captcha must be sovled!
+
+        print(f"turnstile_response: {cf_token}")
+        if not cf_token:
+            print("no captcha response")
+            return RedirectResponse(app.url_path_for("report", oid=oid), status_code=303)
+
+        verification_response = requests.post(
+            'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+            data={
+                'secret': settings.turnstile_secret,
+                'response': cf_token
+            }
+        )
+            
+        verification_result = verification_response.json()
+        if not verification_result.get('success'):
+            # CAPTCHA verification failed
+            print(f"CAPTCHA verification failed")
+            return RedirectResponse(app.url_path_for("report", oid=oid), status_code=303)
+
+
+    print("captcha OK")
+
+    if c.report_path.exists():
+        if force:
+            c.report_path.unlink(missing_ok=True)
+            c.explain_path.unlink(missing_ok=True)
+        else:
+            print("already exists", c)
+            return RedirectResponse(app.url_path_for("report", oid=oid), status_code=303)
+        
+    submit_fraud_task(oid, force=force)
+    # r.rpush('af2gis:queue', oid)
+
+    """
+    c.report_path.unlink(missing_ok=True)
+    c.explain_path.unlink(missing_ok=True)
+    c.trusted = None
+    c.detections = list()
+    c.save_basic()
+    """
 
     return RedirectResponse(app.url_path_for("progress", oid=oid), status_code=303)
 

@@ -48,7 +48,12 @@ class Settings():
         self.median_user_age = int(os.getenv('MEDIAN_USER_AGE', '30'))
         self.median_user_age_nusers = int(os.getenv('MEDIAN_USER_AGE_NUSERS', '10'))
 
+
         self.proxy = os.getenv('HTTPS_PROXY', None)
+
+        self.turnstile_sitekey = os.getenv('TURNSTILE_SITEKEY', None)
+        self.turnstile_secret = os.getenv('TURNSTILE_SECRET', None)
+
 
     def param_fp(self):
         return f"risk_hit={self.risk_hit_th} risk_median_th={self.risk_median_th} risk_highrate_th={self.risk_highrate_th} " \

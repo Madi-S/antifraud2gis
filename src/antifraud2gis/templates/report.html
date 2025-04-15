@@ -112,13 +112,29 @@
                 Параметры расчета:
                 <span class="score">{{score.param_fp}}</span>
             </div>
-    
+
+            <div id="actionbox">
+                <p>Можно пересчитать (на случай если в алгоритме поменяли параметры со времени расчета).</p>
+
+                <form method="POST" action="/submit">
+                    <div class="flexdiv">
+                        {%if settings.turnstile_sitekey %}
+                        {% set btn_disabled = "disabled" %}
+
+                        <div class="cf-turnstile" 
+                            data-sitekey="{{ settings.turnstile_sitekey }}"
+                            data-callback="turnstileCallback">
+                        </div>
+                        {% endif %}
+                        <div>
+                            <input type="hidden" name="force" value="true">
+                            <input type="hidden" name="oid" value="{{oid}}">
+                            <button id="submit_btn" {{btn_disabled}}>Пересчитать</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
         </div>
-
-
-    <div id="result">
-    </div>
-
-
 
 {% endblock %}

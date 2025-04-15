@@ -9,9 +9,24 @@
     <div id="actionbox">
         <p>На данный момент нет подготовленного отчета по компании <b>{{title}}</b>.</p>
         <p>Это можно легко исправить.</p>
+
         <form method="POST" action="/submit">
-            <input type="hidden" name="oid" value="{{oid}}">
-            <button>Рассчитать статистические аномалии</button>
+            <div class="flexdiv">
+                {%if settings.turnstile_sitekey %}
+                {% set btn_disabled = "disabled" %}
+
+                <div class="cf-turnstile" 
+                    data-sitekey="{{ settings.turnstile_sitekey }}"
+                    data-callback="turnstileCallback">
+                </div>
+                {% endif %}
+                <div>
+                    <input type="hidden" name="force" value="false">
+                    <input type="hidden" name="oid" value="{{oid}}">
+                    <button id="submit_btn" {{btn_disabled}}>Рассчитать статистические аномалии</button>
+                </div>
+            </div>
         </form>
     </div>
+
 {% endblock %}

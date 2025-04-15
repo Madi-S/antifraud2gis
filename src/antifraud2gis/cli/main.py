@@ -40,54 +40,18 @@ from .summary import printsummary
 
 last_summary = 0
 
-def UNUSED_get_args():
+def get_args():
+
 
     aa = ArgAlias()
-    aa.alias(["company"], "c")
-    aa.alias(["company", "compare"], "cmp")
-    aa.alias(["company", "fraud"], "f", "fr")
-    aa.alias(["company", "reviews"], "rev")
-    aa.alias(["company", "info"], "i")
-
-    aa.alias(["user"], "u", "users")
-    aa.alias(["user", "company"], "c", "ci")
-    aa.alias(["user", "reviews"], "rev")
-    aa.alias(["user", "info"], "i")
-
-    aa.alias(["summary"], "sum", "s")
-    aa.alias(["summary", "summary"], "sum")
-    aa.alias(["summary", "search"], "se", "s")
-    aa.alias(["summary", "table", "TwinScore"], "twin", "ts")
-    aa.alias(["summary", "table", "WSS"], "wss")
-
-
+    aa.alias(["list"], "l")
+    aa.alias(["info"], "i")
+    aa.alias(["fraud"], "f", "fr")
+    aa.alias(["submitfraud"], "sf", "sfr")
+    
     aa.skip_flags()
     aa.parse()
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-v", "--verbose", default=False, action='store_true')
-    parser.add_argument("--stop", default=False, action='store_true')
-
-    # add subparser for company
-    subparsers = parser.add_subparsers(dest="subparser", help="sub-command help")
-
-
-
-    add_summary_parser(subparsers=subparsers)
-    add_company_parser(subparsers=subparsers)
-    add_user_parser(subparsers=subparsers)
-    add_dev_parser(subparsers=subparsers)
-
-    #sum_parser = subparsers.add_parser("summary", help="Operations with whole database")
-    #sum_parser.add_argument("cmd", nargs='?', choices=['summary', 'dump', 'table', 'recalc'])
-    #sum_parser.add_argument("args", nargs=argparse.REMAINDER)
-
-
-    return parser.parse_args()
-    #return parser.parse_known_args()
-
-
-def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("cmd", choices=['info', 'list','stop','summary', 'fraud', 'compare', 'submitfraud', 'delreport', 'wipe', 'export', 'search'])
     parser.add_argument("-v", "--verbose", default=False, action='store_true')
@@ -113,6 +77,8 @@ def get_args():
 
     return parser.parse_args()
 
+def any_filter(args):
+    return args.company or args.name or args.town or args.detection or args.report or args.noreport
 
 def main():
     args = get_args()
@@ -166,6 +132,11 @@ def main():
 
     elif args.cmd in ["list", "fraud", "delreport", "wipe", "submitfraud", "export"]:
 
+        # sanity check
+        if args.cmd in ["submitfraud", "delreport", "wipe"] and not any_filter(args):
+            print(f"Need company filter for {args.cmd}")
+            sys.exit(1)
+
         # if company is given, create it first (if it's missing)
         if args.company and args.cmd not in ['wipe', 'submitfraud']:
             Company(args.company)
@@ -180,6 +151,7 @@ def main():
 
         total_processed = 0
         effectively_processed = 0
+
 
         for c in cl.companies(oid=args.company, name=args.name, town=args.town, detection=args.detection, report=args.report, noreport=args.noreport):
 
@@ -206,7 +178,7 @@ def main():
                 if args.maxq:
                     cooldown_queue(args.maxq)
                 print("submit fraud request for", c)
-                submit_fraud_task(oid = c.object_id)
+                submit_fraud_task(oid = c.object_id, force=args.overwrite)
 
 
             elif args.cmd == "delreport":                

@@ -33,7 +33,7 @@ def cooldown_queue(maxq: int):
         time.sleep(10)
 
 @dramatiq.actor
-def fraud_task(oid: str):
+def fraud_task(oid: str, force=False):
     global processed
     #lock = FileLock(lock_path)
 
@@ -57,7 +57,7 @@ def fraud_task(oid: str):
     print(f"{os.getpid()} task STARTED {c}")
     r.set(REDIS_WORKER_STATUS, oid)
     try:
-        score = detect(c, cl)
+        score = detect(c, cl, force=force)
     except AFNoCompany:
         logger.warning(f"Worker: Company {oid!r} not found")
         return
@@ -93,7 +93,7 @@ def fraud_task(oid: str):
     logger.info(statistics)
 
 
-def submit_fraud_task(oid: str):
-    fraud_task.send(oid)
+def submit_fraud_task(oid: str, force: bool = False):
+    fraud_task.send(oid, force=force)
     r.rpush(REDIS_TASK_QUEUE_NAME, oid)
 

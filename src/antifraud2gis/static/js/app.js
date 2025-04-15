@@ -22,6 +22,11 @@ function make_auto_refresh(){
 
 }
 
+function turnstileCallback(){
+    const submit_btn = document.getElementById('submit_btn');
+    submit_btn.disabled = false;
+}
+
 function main(){
     make_auto_refresh()
 }

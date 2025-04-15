@@ -3,8 +3,15 @@ import time
 import random
 import pkg_resources
 import redis
+import random
+from rich import print_json
 from rich.text import Text
 from pathlib import Path
+from argalias import ArgAlias
+import os
+import sys
+import requests
+
 
 from ..company import CompanyList, Company
 from ..user import User, reset_user_pool
@@ -14,8 +21,10 @@ from ..exceptions import AFNoCompany
 from ..aliases import aliases
 from .summary import printsummary
 from ..tasks import submit_fraud_task, cooldown_queue
-from ..const import REDIS_TASK_QUEUE_NAME, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_WORKER_STATUS, REDIS_DRAMATIQ_QUEUE
+from ..const import REDIS_TASK_QUEUE_NAME, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_WORKER_STATUS, REDIS_DRAMATIQ_QUEUE, REVIEWS_KEY
 from ..logger import logger
+from ..session import session
+from ..utils import random_company
 
 def countdown(n=5):
     for i in range(n, 0, -1):
@@ -123,8 +132,19 @@ def handle_dev(args: argparse.Namespace):
 
 
 def get_args():
+
+
+    aa = ArgAlias()
+    aa.alias(["queue"], "q")
+    aa.alias(["company-users"], "cu")
+    aa.alias(["user-reviews"], "ur")
+    
+    aa.skip_flags()
+    aa.parse()
+
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("cmd", choices=['company-users', 'user-reviews', 'queue', 'explore'])
+    parser.add_argument("cmd", choices=['company-users', 'user-reviews', 'queue', 'explore', 'ip'])
     parser.add_argument("-v", "--verbose", default=False, action='store_true')
     parser.add_argument("--full", default=False, action='store_true')
     parser.add_argument("args", nargs='*', help='extra args')
@@ -172,6 +192,9 @@ def main():
             r.delete(REDIS_TASK_QUEUE_NAME)
             r.delete(REDIS_TRUSTED_LIST)
             r.delete(REDIS_UNTRUSTED_LIST)
+            for key in r.scan_iter("dramatiq:*"):
+                print("  delete", key)
+                r.delete(key)            
 
         wstatus = r.get(REDIS_WORKER_STATUS)
         tasks = r.lrange(REDIS_TASK_QUEUE_NAME, 0, -1)  # возвращает list of bytes    
@@ -185,6 +208,28 @@ def main():
         print(f"Tasks ({len(tasks)}): {tasks[:5]} ")
         print(f"Trusted ({trusted_len})")
         print(f"Untrusted ({untrusted_len})")
+
+    elif cmd == "ip":
+
+
+        print(f"Python: {sys.version}")
+
+
+        print(f"HTTPS_PROXY env variable: {os.getenv('HTTPS_PROXY', None)}")
+        r = requests.get("https://ipinfo.io/ip", proxies=None)
+        print(f"Raw IP: {r.text}")
+
+        r = session.get("https://ipinfo.io/ip")
+        print(f"IP: {r.text}")
+
+        oid = random_company() or '4504127908538375'
+        print("Random test OID:", oid)
+        testurl = f'https://public-api.reviews.2gis.com/2.0/branches/{oid}/reviews?limit=50&fields=meta.providers,meta.branch_rating,meta.branch_reviews_count,meta.total_count,reviews.hiding_reason,reviews.is_verified&without_my_first_review=false&rated=true&sort_by=friends&key={REVIEWS_KEY}&locale=ru_RU'
+        r = session.get(testurl)
+        print(f"HTTP response code: {r.status_code}")
+        data = r.json()
+        print(f"Meta code: {data['meta']['code']}, rating:{data['meta']['branch_rating']} count: {data['meta']['branch_reviews_count']}/{data['meta']['total_count']}")
+        print(f"Reviews: {len(data['reviews'])}")
 
     elif cmd == "explore":
 

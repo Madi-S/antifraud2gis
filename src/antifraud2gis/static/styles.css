@@ -136,6 +136,13 @@ button:hover {
     background-color: #2980b9;
 }
 
+button:disabled {
+    background-color: #d3d3d3; /* Gray color */
+    color: #a0a0a0;           /* Lighter gray text */
+    border: 1px solid #d3d3d3; /* Same color for border */
+    cursor: not-allowed;       /* Change cursor to 'not allowed' */
+}
+
 .companyinfo {
     display: flex;
     justify-content: space-around;
@@ -368,4 +375,15 @@ li {
 .site-footer a {
     color: #555;
     text-decoration: none;
+}
+
+.flexdiv {
+    display: flex;
+    justify-content: center;
+    gap: 1em;
+}
+
+.cf-turnstile {
+    width: 300px; 
+    height: 65px;
 }
