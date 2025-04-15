@@ -63,7 +63,7 @@ def dbtruncate(conn = None):
     cursor = conn.cursor()
     cursor.execute("DELETE FROM company")
 
-def add_company(company_data: dict, conn = None):
+def update_company(company_data: dict, conn = None):
     conn = conn or make_connection()
     cursor = conn.cursor()
 

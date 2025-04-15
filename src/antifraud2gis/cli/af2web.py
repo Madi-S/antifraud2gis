@@ -192,12 +192,16 @@ async def submit(request: Request, oid: str = Form(...), force: bool = Form(Fals
             return RedirectResponse(app.url_path_for("report", oid=oid), status_code=303)
 
 
-    print("captcha OK")
+    if c.branch_rating_2gis is None:
+        print("re-create company")        
+        Company.wipe(oid)
+        # c = Company(oid)
 
     if c.report_path.exists():
         if force:
-            c.report_path.unlink(missing_ok=True)
-            c.explain_path.unlink(missing_ok=True)
+            pass
+            # c.report_path.unlink(missing_ok=True)
+            # c.explain_path.unlink(missing_ok=True)
         else:
             print("already exists", c)
             return RedirectResponse(app.url_path_for("report", oid=oid), status_code=303)
