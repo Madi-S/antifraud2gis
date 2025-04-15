@@ -25,7 +25,7 @@ from ..const import REDIS_TASK_QUEUE_NAME, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_L
 from ..logger import logger
 from ..session import session
 from ..utils import random_company
-from ..companydb import add_company, check_by_oid, get_by_oid, dbsearch, dbtruncate
+from ..companydb import add_company, check_by_oid, get_by_oid, dbsearch, dbtruncate, make_connection
 
 def countdown(n=5):
     for i in range(n, 0, -1):
@@ -251,10 +251,11 @@ def main():
 
         inserted = 0
         started = time.time()
+        sq3 = make_connection()
         for c in cl.companies(oid=args.company, name=args.name, town=args.town, report=args.report, noreport=args.noreport):
                 inserted += 1
                 print(f"{inserted} add {c.object_id} {c.title}")
-                add_company(c.export())
+                add_company(c.export(), conn=sq3)
                 if inserted % 100 == 0:
                     print(f"+++ Inserted {inserted} companies in {int(time.time() - started)} seconds")
 
