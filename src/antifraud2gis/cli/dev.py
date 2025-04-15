@@ -251,14 +251,12 @@ def main():
 
         inserted = 0
         started = time.time()
-        last_print = started
         for c in cl.companies(oid=args.company, name=args.name, town=args.town, report=args.report, noreport=args.noreport):
                 inserted += 1
                 print(f"{inserted} add {c.object_id} {c.title}")
                 add_company(c.export())
-                if time.time() > last_print + 60:
-                    print(f"Inserted {inserted} companies")
-                    last_print = time.time()
+                if inserted % 100 == 0:
+                    print(f"+++ Inserted {inserted} companies in {int(time.time() - started)} seconds")
 
         print(f"Done. Inserted {inserted} records, already exists.")
 
