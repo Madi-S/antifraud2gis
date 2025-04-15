@@ -58,6 +58,10 @@ def dbsearch(query: str, limit=20, conn = None) -> list[dict]:
     col_names = [desc[0] for desc in cursor.description]
     return [dict(zip(col_names, row)) for row in rows]
 
+def dbtruncate(conn = None):
+    conn = conn or make_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM company")
 
 def add_company(company_data: dict, conn = None):
     conn = conn or make_connection()

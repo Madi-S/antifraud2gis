@@ -25,7 +25,7 @@ from ..const import REDIS_TASK_QUEUE_NAME, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_L
 from ..logger import logger
 from ..session import session
 from ..utils import random_company
-from ..companydb import add_company, check_by_oid, get_by_oid, dbsearch
+from ..companydb import add_company, check_by_oid, get_by_oid, dbsearch, dbtruncate
 
 def countdown(n=5):
     for i in range(n, 0, -1):
@@ -245,22 +245,22 @@ def main():
         print(f"Reviews: {len(data['reviews'])}")
 
     elif cmd == "filldb":
+
+        if args.overwrite:
+            dbtruncate()
+
         inserted = 0
-        exist = 0
-        skipped = 0
+        started = time.time()
+        last_print = started
         for c in cl.companies(oid=args.company, name=args.name, town=args.town, report=args.report, noreport=args.noreport):
-            if skipped < 1210:
-                skipped += 1
-                continue
-
-
-            if check_by_oid(c.object_id):
-                exist += 1
-            else:
                 inserted += 1
                 print(f"{inserted} add {c.object_id} {c.title}")
                 add_company(c.export())
-        print(f"Done. Inserted {inserted} records, {exist} already exists.")
+                if time.time() > last_print + 60:
+                    print(f"Inserted {inserted} companies")
+                    last_print = time.time()
+
+        print(f"Done. Inserted {inserted} records, already exists.")
 
         
     elif cmd == "explore":
