@@ -217,21 +217,29 @@ def main():
 
         print(f"HTTPS_PROXY env variable: {os.getenv('HTTPS_PROXY', None)}")
         r = requests.get("https://ipinfo.io/ip", proxies={"https": None, "http": None})
-        print(f"Raw IP: {r.text}")
+        print(f"Direct IP: {r.text}")
 
         r = session.get("https://ipinfo.io/ip")
-        print(f"IP: {r.text}")
+        print(f"Session IP: {r.text}")
 
         oid = random_company() or '4504127908538375'
         print("Random test OID:", oid)
         testurl = f'https://public-api.reviews.2gis.com/2.0/branches/{oid}/reviews?limit=50&fields=meta.providers,meta.branch_rating,meta.branch_reviews_count,meta.total_count,reviews.hiding_reason,reviews.is_verified&without_my_first_review=false&rated=true&sort_by=friends&key={REVIEWS_KEY}&locale=ru_RU'
 
 
-        r = requests.get(testurl, proxies={"https": None, "http": None}, timeout=3)
-        print(f"Direct HTTP reviews request: {r.status_code}")
+        try:
+            r = requests.get(testurl, proxies={"https": None, "http": None}, timeout=3)
+            print(f"Direct HTTP reviews request: {r.status_code}")
+        except requests.exceptions.RequestException as e:
+            print(f"Direct HTTP reviews request error: {e}")
         
-        r = session.get(testurl, timeout=3)
-        print(f"Session HTTP response code: {r.status_code}")
+        try:
+            r = session.get(testurl, timeout=3)
+            print(f"Session HTTP response code: {r.status_code}")
+        except requests.exceptions.RequestException as e:
+            print(f"Direct HTTP reviews request error: {e}")
+
+
         data = r.json()
         print(f"Meta code: {data['meta']['code']}, rating:{data['meta']['branch_rating']} count: {data['meta']['branch_reviews_count']}/{data['meta']['total_count']}")
         print(f"Reviews: {len(data['reviews'])}")
