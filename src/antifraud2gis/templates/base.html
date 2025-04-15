@@ -22,7 +22,7 @@
         <h1>{% block header %}{% endblock %}</h1>
     </div>      
     <div class="search-container">
-        <form class="search-form" id="search-form" method="POST" action="/search">
+        <form class="search-form" id="search-form" method="GET" action="/search">
             <input type="text" id="oid" name="query" value="{{query}}" placeholder="Введите название компании или 2GIS object_id" required>
             <button type="submit">Найти</button>
         </form>

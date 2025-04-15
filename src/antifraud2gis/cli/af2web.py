@@ -27,7 +27,8 @@ from ..exceptions import AFReportNotReady, AFNoCompany
 from ..tasks import submit_fraud_task, get_qsize
 from ..settings import settings
 from ..const import REDIS_TASK_QUEUE_NAME, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_WORKER_STATUS
-from ..search import search
+# from ..search import search
+from ..companydb import dbsearch
 
 app = FastAPI()
 
@@ -217,15 +218,14 @@ async def submit(request: Request, oid: str = Form(...), force: bool = Form(Fals
 
 
 
-@app.post("/search", response_class=HTMLResponse)
-async def search_view(request: Request, query: str = Form(...)):
-    # 15 actually
+@app.get("/search", response_class=HTMLResponse)
+async def search_view(request: Request, query: str):
+
     if query.isdigit() and len(query) >= 12:
-        print(f"redirect by id {query!r}")
         return RedirectResponse(app.url_path_for("report", oid=query), status_code=303)
     else:
-        print(f"search for {query!r}")
-        results = search(query, limit=25)
+        # results = search(query, limit=25)
+        results = dbsearch(query, limit=25)
         print(f"got {len(results)} results for {query!r}")
 
         last_trusted = [json.loads(item) for item in r.lrange(REDIS_TRUSTED_LIST, 0, -1)]

@@ -387,3 +387,16 @@ li {
     width: 300px; 
     height: 65px;
 }
+
+
+#recalc-box {
+    display: none;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s ease;
+}
+
+#recalc-box.show {
+    display: flex;
+    max-height: 200px; /* или auto для динамического размера */
+}

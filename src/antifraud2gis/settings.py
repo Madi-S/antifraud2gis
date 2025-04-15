@@ -9,7 +9,9 @@ class Settings():
         self.user_storage = self.storage / "users"
         self.private_user_storage = self.storage / "users" / "_private.json"
         self.company_storage = self.storage / "companies"
-        self.search = self.storage / "search.jsonl"
+        # self.search = self.storage / "search.jsonl"
+        # self.searchnew = self.storage / "searchnew.jsonl"
+        self.companydb = self.storage / "companies.db"
 
         # trust company if <= min_reviews
         self.min_reviews = int(os.getenv('MIN_REVIEWS', '20'))

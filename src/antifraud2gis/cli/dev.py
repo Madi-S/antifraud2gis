@@ -25,6 +25,7 @@ from ..const import REDIS_TASK_QUEUE_NAME, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_L
 from ..logger import logger
 from ..session import session
 from ..utils import random_company
+from ..companydb import add_company, check_by_oid, get_by_oid, dbsearch
 
 def countdown(n=5):
     for i in range(n, 0, -1):
@@ -144,7 +145,7 @@ def get_args():
 
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("cmd", choices=['company-users', 'user-reviews', 'queue', 'explore', 'ip'])
+    parser.add_argument("cmd", choices=['company-users', 'user-reviews', 'queue', 'explore', 'ip', 'filldb'])
     parser.add_argument("-v", "--verbose", default=False, action='store_true')
     parser.add_argument("--full", default=False, action='store_true')
     parser.add_argument("args", nargs='*', help='extra args')
@@ -214,7 +215,6 @@ def main():
 
         print(f"Python: {sys.version}")
 
-
         print(f"HTTPS_PROXY env variable: {os.getenv('HTTPS_PROXY', None)}")
         r = requests.get("https://ipinfo.io/ip", proxies={"https": None, "http": None})
         print(f"Direct IP: {r.text}")
@@ -244,6 +244,25 @@ def main():
         print(f"Meta code: {data['meta']['code']}, rating:{data['meta']['branch_rating']} count: {data['meta']['branch_reviews_count']}/{data['meta']['total_count']}")
         print(f"Reviews: {len(data['reviews'])}")
 
+    elif cmd == "filldb":
+        inserted = 0
+        exist = 0
+        skipped = 0
+        for c in cl.companies(oid=args.company, name=args.name, town=args.town, report=args.report, noreport=args.noreport):
+            if skipped < 1210:
+                skipped += 1
+                continue
+
+
+            if check_by_oid(c.object_id):
+                exist += 1
+            else:
+                inserted += 1
+                print(f"{inserted} add {c.object_id} {c.title}")
+                add_company(c.export())
+        print(f"Done. Inserted {inserted} records, {exist} already exists.")
+
+        
     elif cmd == "explore":
 
         if args.town is None:

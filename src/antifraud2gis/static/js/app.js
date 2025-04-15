@@ -27,8 +27,17 @@ function turnstileCallback(){
     submit_btn.disabled = false;
 }
 
+function make_toggle_link(){
+    document.getElementById("toggle-link")?.addEventListener("click", function(e) {
+        e.preventDefault();
+        document.getElementById("recalc-box").classList.toggle("show");
+    });
+   
+}
+
 function main(){
-    make_auto_refresh()
+    make_auto_refresh();
+    make_toggle_link();
 }
 
 main()

@@ -114,10 +114,10 @@
             </div>
 
             <div id="actionbox">
-                <p>Можно пересчитать (на случай если в алгоритме поменяли параметры со времени расчета).</p>
+                <p>Можно <a href="javascript:void(0)" class="toggle" id="toggle-link">пересчитать</a> (на случай если в алгоритме поменяли параметры со времени расчета).</p>
 
                 <form method="POST" action="/submit">
-                    <div class="flexdiv">
+                    <div class="flexdiv" id="recalc-box">
                         {%if settings.turnstile_sitekey %}
                         {% set btn_disabled = "disabled" %}
 
@@ -129,11 +129,11 @@
                         <div>
                             <input type="hidden" name="force" value="true">
                             <input type="hidden" name="oid" value="{{oid}}">
-                            <button id="submit_btn" {{btn_disabled}}>Пересчитать</button>
+                            <button type="submit" id="submit_btn" {{btn_disabled}}>Пересчитать</button>
                         </div>
                     </div>
                 </form>
-            </div>
+            </div> <!-- actionbox -->
 
         </div>
 

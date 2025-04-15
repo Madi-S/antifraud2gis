@@ -16,12 +16,14 @@ from .db import db
 from .const import WSCORE_THRESHOLD, WSCORE_HITS_THRESHOLD, MAX_USER_REVIEWS
 from .logger import logger
 from .company import Company, CompanyList
+from .companydb import add_company, get_by_oid, check_by_oid
 from .user import User, get_user
 from .relation import RelationDict, _is_dangerous
 from .settings import settings
 from .exceptions import AFReportNotReady, AFNoCompany, AFReportAlreadyExists
 # from .usernotes import Usernotes
 from .fd.master import MasterFD
+from .search import company_indexed, index_company
 
 def detect(c: Company, cl: CompanyList, explain: bool = False, force=False):
 
@@ -63,6 +65,12 @@ def detect(c: Company, cl: CompanyList, explain: bool = False, force=False):
         report = dict()        
         report['score'] = score
         report['relations'] = list()
+
+        c.trusted = True
+        c.detections = list()
+
+        add_company(c.export())
+
         with gzip.open(c.report_path, "wt") as fh:
             json.dump(report, fh)
         
@@ -110,6 +118,8 @@ def detect(c: Company, cl: CompanyList, explain: bool = False, force=False):
     else:
         dnames = [ dline.split(' ')[0] for dline in score['detections'] ]
         trust_line = f"RISK {len(dnames)} {'+'.join(dnames)}"
+
+    add_company(c.export())
 
     logger.info(f"DETECTION RESULT {c} {trust_line}")
     return score

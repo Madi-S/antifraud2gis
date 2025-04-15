@@ -181,10 +181,15 @@ class Company:
         return len(self._reviews)
 
     def count_rate(self):
+
+        
+
         self.ratings = list()
         for r in self._reviews:
             if r['rating'] is None:
-                print_json(data=r)
+                # 70000001006412601
+                # rating could be None e.g. when provider=4sq
+                continue
             if r['rating'] is not None:
                 self.ratings.append(r['rating'])
 
@@ -254,11 +259,15 @@ class Company:
             r.raise_for_status()
             data = r.json()
 
+            # branch review may exists, but not total_count
+            # 70000001028529798
+
             if self.total_count_2gis is None:
                 self.total_count_2gis = data['meta']['total_count']
                 self.branch_count_2gis = data['meta']['branch_reviews_count']
                 self.branch_rating_2gis = data['meta']['branch_rating']
                 # print(f"Total/Branch reviews count: {self.total_count_2gis}/{self.branch_count_2gis}")
+
 
             if self.total_count_2gis == 0 or self.branch_count_2gis == 0:                
                 raise AFNoCompany(f"No reviews for {self.object_id}")
@@ -343,6 +352,7 @@ class Company:
             'rating_2gis': self.branch_rating_2gis,
             'trusted': self.trusted,
             'nreviews': self.nreviews(),
+            'detections': ' '.join(self.detections)
         }
         
         if self.trusted is None and self.report_path.exists():

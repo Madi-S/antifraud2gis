@@ -28,7 +28,8 @@ from ..exceptions import AFNoCompany, AFReportNotReady, AFReportAlreadyExists
 from ..settings import settings
 from ..statistics import statistics
 from ..aliases import resolve_alias
-from ..search import search
+# from ..search import search
+from ..companydb import dbsearch
 
 # CLI
 from .summary import printsummary
@@ -125,7 +126,7 @@ def main():
         print(f"{len(report['relations'])} relations")
         
     elif args.cmd == "search":
-        res = search(args.args[0])
+        res = dbsearch(args.args[0])
         for rec in res:
             print(rec)
         
@@ -133,7 +134,7 @@ def main():
     elif args.cmd in ["list", "fraud", "delreport", "wipe", "submitfraud", "export"]:
 
         # sanity check
-        if args.cmd in ["submitfraud", "delreport", "wipe"] and not any_filter(args):
+        if args.cmd in ["submitfraud", "fraud", "delreport", "wipe"] and not any_filter(args):
             print(f"Need company filter for {args.cmd}")
             sys.exit(1)
 
