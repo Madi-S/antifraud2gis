@@ -30,11 +30,11 @@ class EmptyUserFD(BaseFD):
             if self._explain:
 
                 if cr.uid is None:
-                    self.records.append(f"NONE {cr.created_str} {cr.rating } uid:{cr.uid} {cr.user_name}")
+                    self.records.append(f"NONE {cr.created_str} {cr.rating } {cr.provider} uid:{cr.uid} {cr.user_name} ")
                 else:
                     u = User(cr.uid)
                     u.load()
-                    self.records.append(f"EMPTY {cr.created_str} {cr.rating} uid: {cr.uid} {u.name} nr:{u.nreviews()}")
+                    self.records.append(f"EMPTY {cr.created_str} {cr.rating} {cr.provider} uid: {cr.uid} {u.name} nr:{u.nreviews()}")
 
         else:
             self.non_empty_ratings.append(cr.rating)

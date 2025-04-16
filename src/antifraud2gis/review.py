@@ -11,6 +11,7 @@ class Review():
         self.user_name = data['user']['name']
         self.text = data.get('text')        
         self.nphotos = len(data['photos'])
+        self.provider = data.get('provider')
 
         self._user = None
         self._company = company
