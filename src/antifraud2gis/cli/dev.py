@@ -146,7 +146,7 @@ def get_args():
 
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("cmd", choices=['company-users', 'user-reviews', 'queue', 'explore', 'ip', 'filldb'])
+    parser.add_argument("cmd", choices=['company-users', 'user-reviews', 'queue', 'explore', 'ip', 'filldb', 'dev'])
     parser.add_argument("-v", "--verbose", default=False, action='store_true')
     parser.add_argument("--full", default=False, action='store_true')
     parser.add_argument("args", nargs='*', help='extra args')
@@ -277,7 +277,7 @@ def main():
                     continue
 
                 if db.is_nocompany(rev.oid):
-                    logger.info(f"Skip nocompany {rev.oid} {rev.title}")
+                    logger.info(f"Skip nocompany (in db) {rev.oid} {rev.title}")
                     continue
 
                 if not cl.company_exists(rev.oid):
@@ -301,5 +301,8 @@ def main():
                     logger.info("Stopfile found, exit")
                     stopfile.unlink()
                     return
+    elif cmd == "dev":
+        pass
+    
             
 

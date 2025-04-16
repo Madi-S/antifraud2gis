@@ -59,6 +59,8 @@ class MyDB:
 
 
     def add_nocompany(self, company_id):
+        if company_id in self.nocompanies:
+            return
         self.nocompanies.append(company_id)
         self.save_nocompanies()
 
