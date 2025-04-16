@@ -12,16 +12,20 @@ class Review():
         self.text = data.get('text')        
         self.nphotos = len(data['photos'])
 
-        self._user = user
+        self._user = None
         self._company = company
-
+        self.user_age = None
 
         self.created = datetime.datetime.strptime(data['date_created'].split('T')[0], "%Y-%m-%d")
+
+        # age from today (grows every time)
         self.age = (datetime.datetime.now() - self.created).days
-        if self._user:
-            self.user_age = (self.created - self._user.birthday()).days
-        else:
-            self.user_age = None
+
+        
+
+        if user:
+            self.set_user(user)
+        
 
         if self._company:
             self.title = self._company.title
@@ -38,6 +42,12 @@ class Review():
             except KeyError:
                 self.address = None
 
+    def set_user(self, user):
+        self._user = user
+        if self._user.birthday():
+            # set only for public profile
+            self.user_age = (self.created - self._user.birthday()).days
+
 
     @property
     def created_str(self):
@@ -45,10 +55,12 @@ class Review():
 
     @property    
     def user(self):
-        if self._user:
-            return self._user
-        from .user import User, get_user
-        return get_user(self.uid)
+        if not self._user:
+            from .user import User, get_user
+            user = get_user(self.uid)
+            self.set_user(user)
+
+        return self._user
 
     @property
     def user_url(self):

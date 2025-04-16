@@ -135,8 +135,11 @@ def main():
 
         # sanity check
         if args.cmd in ["submitfraud", "fraud", "delreport", "wipe"] and not any_filter(args):
-            print(f"Need company filter for {args.cmd}")
-            sys.exit(1)
+            if len(args.args) == 1:
+                args.company = args.args[0]
+            else:
+                print(f"Need company filter for {args.cmd}")
+                sys.exit(1)
 
         # if company is given, create it first (if it's missing)
         if args.company and args.cmd not in ['wipe', 'submitfraud']:

@@ -40,7 +40,7 @@ class Settings():
 
         # untrusted if EMPTY_USER% (and their rating differs)
         self.empty_user = float(os.getenv('EMPTY_USER', '75'))
-        self.empty_user_diff = float(os.getenv('EMPTY_USER_DIFF', '0.5'))
+        self.rating_diff = float(os.getenv('RATING_DIFF', '0.5'))
 
         self.median_rpu = float(os.getenv('MEDIAN_RPU', '2'))
         
@@ -61,7 +61,8 @@ class Settings():
         return f"risk_hit={self.risk_hit_th} risk_median_th={self.risk_median_th} risk_highrate_th={self.risk_highrate_th} " \
             f"empty_user={self.empty_user} risk_user_ratio={self.risk_user_ratio} " \
             f"happy_long_rel_th={self.happy_long_rel} median_user_age={self.median_user_age} " \
-            f"sametitle_rel={self.sametitle_rel} sametitle_ratio={self.sametitle_ratio} "
+            f"sametitle_rel={self.sametitle_rel} sametitle_ratio={self.sametitle_ratio} " \
+            f"rating_diff={self.rating_diff}"
 
 
 settings = Settings()

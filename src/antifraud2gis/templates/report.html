@@ -31,8 +31,8 @@
                             <a href="{{ request.url_for('md_page', page='anomaly').path }}">
                             <b>Аномалии:</b> {{' '.join(c.detections)}}
                         </a></p>
+                        <p><a href="{{ request.url_for('explain', oid=c.object_id).path }}">Журнал расчета</a></p>
                     {% endif %}
-                    <p><a href="{{ request.url_for('explain', oid=c.object_id).path }}">Журнал расчета</a></p>
                     <p>Дата отчета: {{score.date}} </p>
                     
 
@@ -108,10 +108,15 @@
             </div>
                 {%endif%}
 
+            {% if score.param_fp %}
             <div>
-                Параметры расчета:
-                <span class="score">{{score.param_fp}}</span>
+                Параметры расчета
+                {% if settings.param_fp() != score.param_fp %}
+                (устарели, советуем пересчитать)
+                {% endif %}:
+                <p class="score">{{score.param_fp}}</p>
             </div>
+            {% endif %}
 
             <div id="actionbox">
                 <p>Можно <a href="javascript:void(0)" class="toggle" id="toggle-link">пересчитать</a> (на случай если в алгоритме поменяли параметры со времени расчета).</p>

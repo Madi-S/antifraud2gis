@@ -22,6 +22,7 @@ class MedianAgeFD(BaseFD):
         self.user_ages = list()
         self.records = list()
         self.low_rating = 0
+        self.agerate = np.empty((0, 2), dtype=int)
 
     def feed(self, cr: Review, empty: bool = False):
 
@@ -30,31 +31,57 @@ class MedianAgeFD(BaseFD):
 
         u = cr.user
 
-        if cr.rating >= settings.risk_highrate_th:
-            user_age = (cr.created - u.birthday()).days
-            self.user_ages.append(user_age)
-            self.records.append(f"{u.public_id} ({u.name} {cr.created_str} - {u.birthday_str}) = {user_age}")
-        else:
-            self.low_rating += 1
-
+        self.agerate = np.vstack([self.agerate, [cr.user_age, cr.rating]])
+        self.records.append(f"{u.public_id} ({u.name} {cr.created_str} - {u.birthday_str}) = {cr.user_age}")
 
     def get_score(self):
 
-        if len(self.user_ages) == 0:
+        if len(self.agerate) == 0:
             return self.score
         
-        median_age = int(np.median(self.user_ages))
+        ages = self.agerate[:, 0]
+        ratings = self.agerate[:, 1]  
+        self.median_age = int(np.median(ages))
 
-        self.score['median_user_age'] = median_age
+        self.young_mask = ages <= self.median_age
+
+        young_ratings = ratings[ages <= self.median_age]
+        old_ratings = ratings[ages > self.median_age]
+
+        self.young_rating = round(np.mean(young_ratings), 1)
+        self.old_rating = round(np.mean(old_ratings), 1)
+        self.rating_diff = round(self.young_rating - self.old_rating, 1)
+
+        self.score['median_user_age'] = self.median_age
         
-        if len(self.user_ages) > settings.median_user_age_nusers and self.score['median_user_age'] <= settings.median_user_age:
-            self.score['ma_low_rating'] = self.low_rating
-            self.score['detections'].append(f"median_user_age {self.score['median_user_age']} <= {settings.median_user_age} ({sum(a <= settings.median_user_age for a in self.user_ages)} of {len(self.user_ages)})")
-    
+
+        if len(young_ratings) >= settings.median_user_age_nusers \
+            and self.median_age <= settings.median_user_age \
+            and self.rating_diff >= settings.rating_diff:
+            self.score['young_rating'] = self.young_rating
+            self.score['old_rating'] = self.old_rating
+            self.score['median_user_age'] = self.median_age
+            self.detection = (f"median_user_age {self.median_age} <= {settings.median_user_age} " \
+                                            f"({len(young_ratings)} of {self.agerate.shape[0]}) " \
+                                            f"and rating_diff {self.old_rating}-{self.young_rating}={self.rating_diff} >= {settings.rating_diff}")
+            self.score['detections'].append(self.detection)
+
         return self.score
     
     def explain(self, fh):
         print(f"Explanation for median_user_age", file=fh)
+
+        for idx, line in enumerate([x for x, m in zip(self.records, self.young_mask) if m], start=1):
+            print(f"{idx} {line}", file=fh)
+
+        print(file=fh)
+        print(f"Median age: {self.median_age} >= {settings.median_user_age}", file=fh)
+        print(f"Young rating({self.young_rating}) - old rating({self.old_rating}) = {self.rating_diff} (> {settings.rating_diff})", file=fh)
+        print(f"Detection: {self.detection}", file=fh)
+        print(file=fh)
+
+        return
+
 
         for idx, line in enumerate(self.records, start=1):
             print(f'{idx} {line}', file=fh)

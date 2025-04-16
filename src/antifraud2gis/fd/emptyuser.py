@@ -49,9 +49,9 @@ class EmptyUserFD(BaseFD):
         # self.score['non-empty-users'] = len(self.non_empty_ratings)
         self.score['empty_user_ratio'] = empty_users_ratio
 
-        if empty_users_ratio >= settings.empty_user and (empty_users_r - non_empty_users_r ) >= settings.empty_user_diff:
+        if empty_users_ratio >= settings.empty_user and (empty_users_r - non_empty_users_r ) >= settings.rating_diff:
             self.score['detections'].append(f'empty_user_ratio {empty_users_ratio}% >= {settings.empty_user}%; ' \
-                f'empty_rating({empty_users_r:.1f}) - non_empty_rating({non_empty_users_r:.1f}) = {(empty_users_r - non_empty_users_r):.1f} >= {settings.empty_user_diff}')
+                f'empty_rating({empty_users_r:.1f}) - non_empty_rating({non_empty_users_r:.1f}) = {(empty_users_r - non_empty_users_r):.1f} >= {settings.rating_diff}')
             return self.score
 
         return self.score

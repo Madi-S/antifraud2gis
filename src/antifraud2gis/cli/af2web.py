@@ -172,7 +172,6 @@ async def submit(request: Request, oid: str = Form(...), force: bool = Form(Fals
     if settings.turnstile_sitekey:
         # captcha must be sovled!
 
-        print(f"turnstile_response: {cf_token}")
         if not cf_token:
             print("no captcha response")
             return RedirectResponse(app.url_path_for("report", oid=oid), status_code=303)
@@ -199,9 +198,9 @@ async def submit(request: Request, oid: str = Form(...), force: bool = Form(Fals
 
     if c.report_path.exists():
         if force:
-            pass
-            # c.report_path.unlink(missing_ok=True)
-            # c.explain_path.unlink(missing_ok=True)
+            # pass
+            c.report_path.unlink(missing_ok=True)
+            c.explain_path.unlink(missing_ok=True)
         else:
             print("already exists", c)
             return RedirectResponse(app.url_path_for("report", oid=oid), status_code=303)

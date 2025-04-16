@@ -76,6 +76,9 @@ class User:
 
     def birthday(self):
         self.load()
+        if not self._reviews:
+            # private profile
+            return None
         r = Review(sorted(self._reviews, key=lambda r: r['date_created'])[0])
         return r.created
 
