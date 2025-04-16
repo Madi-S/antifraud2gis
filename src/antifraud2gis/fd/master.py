@@ -34,6 +34,7 @@ class MasterFD(BaseFD):
         self.score['total_reviews'] = 0
         self.score['processed_reviews'] = 0
         self.score['empty_reviews'] = 0
+        self.score['discarded'] = 0
 
         self._detectors = {
             'empty_user': EmptyUserFD(c, explain=explain),
@@ -54,6 +55,10 @@ class MasterFD(BaseFD):
             empty = True
         else:
             self.score['processed_reviews'] += 1
+
+        if cr.age > settings.max_review_age:
+            self.score['discarded'] += 1
+            return
 
         for d in self._detectors.values():
             d.feed(cr, empty=empty)

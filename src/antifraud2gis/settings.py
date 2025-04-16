@@ -50,8 +50,8 @@ class Settings():
 
         self.median_rpu = float(os.getenv('MEDIAN_RPU', '2'))
         
-        # 5 years old maximum 365*5=1825
-        self.max_review_age = int(os.getenv('MAX_REVIEW_AGE', '1825'))
+        # 2 year old maximum 365
+        self.max_review_age = int(os.getenv('MAX_REVIEW_AGE', '730'))
 
         self.median_user_age = int(os.getenv('MEDIAN_USER_AGE', '30'))
         self.median_user_age_nusers = int(os.getenv('MEDIAN_USER_AGE_NUSERS', '10'))

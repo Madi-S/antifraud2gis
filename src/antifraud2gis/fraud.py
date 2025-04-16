@@ -113,15 +113,9 @@ def detect(c: Company, cl: CompanyList, explain: bool = False, force=False):
 
     print_json(data=score)
 
-    if score['trusted']:
-        trust_line = "TRUSTED"
-    else:
-        dnames = [ dline.split(' ')[0] for dline in score['detections'] ]
-        trust_line = f"RISK {len(dnames)} {'+'.join(dnames)}"
-
     update_company(c.export())
 
-    logger.info(f"DETECTION RESULT {c} {trust_line}")
+    logger.info(f"DETECTION RESULT {c}")
     return score
 
 
