@@ -11,6 +11,7 @@ from argalias import ArgAlias
 import os
 import sys
 import requests
+from collections import defaultdict
 import numpy as np
 
 
@@ -268,7 +269,6 @@ def main():
             th = int(args.args[1])
         except IndexError:
             th = 0
-        print("th:", th)
 
         processed = 0
         provider_ratio = list()
@@ -279,6 +279,8 @@ def main():
         # max PROVIDER ratio among LO companies
         maxlo = 0
 
+        all_providers = defaultdict(int)
+
         for c in cl.companies(oid=args.company, name=args.name, town=args.town, report=args.report, noreport=args.noreport):
             nprov = 0
             total = 0
@@ -288,6 +290,9 @@ def main():
             c.load_reviews()
             for rev in c.reviews():                
                 total += 1
+
+                all_providers[rev.provider] += 1
+
                 if rev.provider == provider:
                     nprov += 1
                     pr.append(rev.rating)
@@ -300,9 +305,9 @@ def main():
                 ratio = int(100*nprov/total)
 
                 # avg rating other providers
-                avg = np.mean(r)
+                avg = np.mean(r) if r else 0
                 # avg rating this provider
-                avg_prov = np.mean(pr)
+                avg_prov = np.mean(pr) if pr else 0
 
                 if avg_prov > avg:
                     higher += 1
@@ -326,8 +331,9 @@ def main():
             processed += 1
             provider_ratio.append(ratio)
 
-        print(f"processed {processed} companies")
+        print(f"processed {processed} companies: {dict(all_providers)}")
         nz_provider_ratio = list(filter(None, provider_ratio))
+
         print(f"companies with 0 reviews from {provider}: {len(provider_ratio) - len(nz_provider_ratio)}")
         print(f"avg ratio of {provider}: {np.mean(nz_provider_ratio):.1f} ({np.mean(provider_ratio):.1f} overall)")
         print(f"over th ({th}): {over_th} ({100*over_th/processed:.1f}%)")
