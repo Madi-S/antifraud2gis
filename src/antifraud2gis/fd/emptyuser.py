@@ -10,7 +10,8 @@ from ..settings import settings
 """
 test: 141265769524555
 
-141266769671800 - ВСЕ отзывы пустые
+141266769671800 - ВСЕ отзывы пустые (мало отзывов)
+70000001021506525 - 
 """
 
 class EmptyUserFD(BaseFD):
@@ -29,7 +30,7 @@ class EmptyUserFD(BaseFD):
             if self._explain:
 
                 if cr.uid is None:
-                    self.records.append(f"NONE {cr.created_str} {cr.rating } uid:{cr.uid}")
+                    self.records.append(f"NONE {cr.created_str} {cr.rating } uid:{cr.uid} {cr.user_name}")
                 else:
                     u = User(cr.uid)
                     u.load()
