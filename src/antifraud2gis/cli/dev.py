@@ -331,7 +331,9 @@ def main():
         print(f"companies with 0 reviews from {provider}: {len(provider_ratio) - len(nz_provider_ratio)}")
         print(f"avg ratio of {provider}: {np.mean(nz_provider_ratio):.1f} ({np.mean(provider_ratio):.1f} overall)")
         print(f"over th ({th}): {over_th} ({100*over_th/processed:.1f}%)")
-        print(f"hi: {higher} lo: {lower} hi/lo: {higher/lower:.2f}")
+        
+        hilorate = higher/lower if lower else 0
+        print(f"hi: {higher} lo: {lower} hi/lo: {hilorate:.2f}")
         print(f"maxlo: {maxlo}")
 
     elif cmd == "explore":
