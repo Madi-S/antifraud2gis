@@ -63,7 +63,7 @@ class MedianAgeFD(BaseFD):
             self.score['median_user_age'] = self.median_age
             self.detection = (f"median_user_age {self.median_age} <= {settings.median_user_age} " \
                                             f"({len(young_ratings)} of {self.agerate.shape[0]}) " \
-                                            f"and rating_diff {self.old_rating}-{self.young_rating}={self.rating_diff} >= {settings.rating_diff}")
+                                            f"and rating_diff {self.young_rating}-{self.old_rating}={self.rating_diff} >= {settings.rating_diff}")
             self.score['detections'].append(self.detection)
 
         return self.score
