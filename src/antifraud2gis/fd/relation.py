@@ -25,7 +25,7 @@ class RelationFD(BaseFD):
         self.records = list()
         self._c.relations = RelationDict(c)
 
-        self.hirel_companies = list()
+        self.happy_hirel_companies = list()
 
         self.towns = set()
         self.titles = set()
@@ -59,13 +59,15 @@ class RelationFD(BaseFD):
             return self.score
 
         # hirel: relations with high hits and high ratings
+        self.happy_hirel = 0
         self.hirel = 0
 
         for rel in self._c.relations.relations.values():
             if rel.check_high_hits():
+                self.hirel += 1
                 if rel.check_high_ratings():
-                    self.hirel += 1
-                    self.hirel_companies.append(rel.b)
+                    self.happy_hirel += 1
+                    self.happy_hirel_companies.append(rel.b)
                     self.towns.add(rel.get_btown())
                     self.titles.add(rel.get_btitle())
 
@@ -74,16 +76,18 @@ class RelationFD(BaseFD):
                             self.risk_users[u.public_id] = list()
                         self.risk_users[u.public_id].append(rel.b)
 
-        self.score['happy_long_rel'] = int(100*len(self.towns)/self.hirel) if self.hirel > 0 else 0
-        self.score['sametitle_rel'] = int(100*len(self.titles)/self.hirel) if self.hirel > 0 else 0
+        self.score['happy_ratio'] = int(100*self.happy_hirel/self.hirel) if self.hirel > 0 else 0
+        self.score['happy_long_rel'] = int(100*len(self.towns)/self.happy_hirel) if self.happy_hirel > 0 else 0
+        self.score['sametitle_rel'] = int(100*len(self.titles)/self.happy_hirel) if self.happy_hirel > 0 else 0
         self.score['risk_users'] = int(100*len(self.risk_users) / self.processed_users)
 
         if len(self.towns) >= settings.happy_long_rel_min_towns \
+                and self.score['happy_ratio'] >= settings.happy_long_rel_happy_ratio \
                 and self.score['happy_long_rel'] >= settings.happy_long_rel:
-            self.score['detections'].append(f"happy_long_rel {self.score['happy_long_rel']}% ({len(self.towns)} of {self.hirel})")
+            self.score['detections'].append(f"happy_long_rel {self.score['happy_long_rel']}% ({len(self.towns)} of {self.happy_hirel})")
 
-        if self.hirel >= settings.sametitle_rel and self.score['sametitle_rel'] <= settings.sametitle_ratio:
-            self.score['detections'].append(f"sametitle_rel {self.score['sametitle_rel']}% ({self.hirel} of {len(self.titles)})")
+        if self.happy_hirel >= settings.sametitle_rel and self.score['sametitle_rel'] <= settings.sametitle_ratio:
+            self.score['detections'].append(f"sametitle_rel {self.score['sametitle_rel']}% ({self.happy_hirel} of {len(self.titles)})")
 
         elif self.score['risk_users'] > settings.risk_user_ratio:
             self.score['detections'].append(f"risk_users {self.score['risk_users']}% ({len(self.risk_users)} / {self.processed_users})")
@@ -94,7 +98,7 @@ class RelationFD(BaseFD):
         print(f"Explanation for relations", file=fh)
 
         # explain hirel
-        print(f"Hirel is ({len(self.hirel_companies)}): {self.hirel_companies}", file=fh)
+        print(f"Hirel is ({len(self.happy_hirel_companies)}): {self.happy_hirel_companies}", file=fh)
 
         for dline in self.score['detections']:
             dname = dline.split()[0]
@@ -102,13 +106,13 @@ class RelationFD(BaseFD):
 
             if dname == 'happy_long_rel':                
                 print(f"Towns ({len(self.towns)} >= {settings.happy_long_rel_min_towns}): {self.towns} ", file=fh)
-                print(f"happy_long_rel is {len(self.towns)}/{self.hirel} = {self.score['happy_long_rel']}% > {settings.happy_long_rel}", file=fh)
+                print(f"happy_long_rel is {len(self.towns)}/{self.happy_hirel} = {self.score['happy_long_rel']}% > {settings.happy_long_rel}", file=fh)
                 print(file=fh)
 
             if dname == 'sametitle_rel':
                 print(f"Titles: {len(self.titles)}", file=fh)
-                print(f"Hirel ({self.hirel} >= {settings.sametitle_rel}) and sametitle_rel {self.score['sametitle_rel']}% <= {settings.sametitle_ratio}%", file=fh)
-                print(f"sametitle_rel is {len(self.titles)}/{self.hirel} = {self.score['sametitle_rel']}%", file=fh)
+                print(f"Hirel ({self.happy_hirel} >= {settings.sametitle_rel}) and sametitle_rel {self.score['sametitle_rel']}% <= {settings.sametitle_ratio}%", file=fh)
+                print(f"sametitle_rel is {len(self.titles)}/{self.happy_hirel} = {self.score['sametitle_rel']}%", file=fh)
                 print(file=fh)
 
 
