@@ -1,6 +1,6 @@
 
 from typing import List, Dict, Set
-from collections import Counter
+from collections import Counter, defaultdict
 from rich import print_json
 import sys
 import json
@@ -42,11 +42,20 @@ class MasterFD(BaseFD):
             'relation': RelationFD(c, explain=explain)
         }
         self._users = set()
+        self.providers = defaultdict(int)
+
 
     def feed(self, cr: Review):
         # only A-company review feeded here
         self.score['total_reviews'] += 1
+
         empty = False
+
+        if cr.age > settings.max_review_age:
+            self.score['discarded'] += 1
+            return
+
+        self.providers[cr.provider] += 1
 
         if cr.is_empty() or cr.user.public_id in self._users:
             if cr.uid is not None and cr.user.public_id in self._users:
@@ -56,9 +65,6 @@ class MasterFD(BaseFD):
         else:
             self.score['processed_reviews'] += 1
 
-        if cr.age > settings.max_review_age:
-            self.score['discarded'] += 1
-            return
 
         for d in self._detectors.values():
             d.feed(cr, empty=empty)
@@ -89,6 +95,7 @@ class MasterFD(BaseFD):
                 self.triggered.append(detector)
                 self.score['detections'].extend(detector_score['detections'])
 
+        self.score['providers'] = dict(self.providers)
         self.score['trusted'] = not self.score['detections']
         self.score['param_fp'] = settings.param_fp()
         self.score['date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
