@@ -16,7 +16,11 @@ af2gis export > ~/.af2gis-storage/search.jsonl
 # find specific record
 jq 'select(.oid == "70000001041490377")' /tmp/export.jsonl
 
-# get length (number of companies)
+# list providers for review
+zcat ~/.af2gis-storage/companies/141265770459396-reviews.json.gz | jq '.[].provider'
+zcat ~/.af2gis-storage/companies/141265770459396-reviews.json.gz | jq '.[] | {id, provider}'
+
+# get length (number of companies)r
 jq -s 'length' /tmp/export.jsonl
 
 # Get top-10 by WSS score

@@ -44,7 +44,7 @@ class MyDB:
             # logger.info(f"Saved {len(self.private_profiles)} private profiles")
 
     def save_nocompanies(self):
-        with open(self.path_companies, 'w') as f:
+        with open(self.path_nocompanies, 'w') as f:
             json.dump(self.nocompanies, f)
 
     def is_private_profile(self, public_id):
