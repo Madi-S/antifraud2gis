@@ -55,6 +55,9 @@ class RelationFD(BaseFD):
     def get_score(self):
         self._c.relations.calc()
 
+        if self.processed_users == 0:
+            return self.score
+
         # hirel: relations with high hits and high ratings
         self.hirel = 0
 

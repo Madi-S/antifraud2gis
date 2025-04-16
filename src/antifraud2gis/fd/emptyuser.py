@@ -9,6 +9,8 @@ from ..settings import settings
 
 """
 test: 141265769524555
+
+141266769671800 - ВСЕ отзывы пустые
 """
 
 class EmptyUserFD(BaseFD):
@@ -42,9 +44,21 @@ class EmptyUserFD(BaseFD):
     def get_score(self):
 
         empty_users_ratio = int(100 * len(self.empty_ratings) / ((len(self.empty_ratings) + len(self.non_empty_ratings))))
+
+        empty_users_r = None
+        non_empty_users_r = None
+
+        if len(self.empty_ratings) < settings.apply_empty_user_min:
+            self.score['empty_rating'] = 'Few empty user reviews :)'
+            return self.score
+        
+        if len(self.non_empty_ratings) < settings.apply_empty_user_min:
+            self.score['empty_rating'] = 'Few verifiable user reviews available :('
+            return self.score
+
         empty_users_r = float(np.mean(self.empty_ratings))
         non_empty_users_r = float(np.mean(self.non_empty_ratings))
-        
+
         # self.score['empty-users'] = len(self.empty_ratings)
         # self.score['non-empty-users'] = len(self.non_empty_ratings)
         self.score['empty_user_ratio'] = empty_users_ratio

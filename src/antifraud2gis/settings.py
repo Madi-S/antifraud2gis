@@ -40,7 +40,12 @@ class Settings():
 
         # untrusted if EMPTY_USER% (and their rating differs)
         self.empty_user = float(os.getenv('EMPTY_USER', '75'))
-        self.rating_diff = float(os.getenv('RATING_DIFF', '0.5'))
+        
+        # do not run empty-user if less then N users available empty/real
+        self.apply_empty_user_min = int(os.getenv('APPLY_EMPTY_USER', '10'))
+
+
+        self.rating_diff = float(os.getenv('RATING_DIFF', '1.2'))
 
         self.median_rpu = float(os.getenv('MEDIAN_RPU', '2'))
         
@@ -59,7 +64,8 @@ class Settings():
 
     def param_fp(self):
         return f"risk_hit={self.risk_hit_th} risk_median_th={self.risk_median_th} risk_highrate_th={self.risk_highrate_th} " \
-            f"empty_user={self.empty_user} risk_user_ratio={self.risk_user_ratio} " \
+            f"empty_user={self.empty_user} apply_empty_user_min={self.apply_empty_user_min}" \
+            f" risk_user_ratio={self.risk_user_ratio} " \
             f"happy_long_rel_th={self.happy_long_rel} median_user_age={self.median_user_age} " \
             f"sametitle_rel={self.sametitle_rel} sametitle_ratio={self.sametitle_ratio} " \
             f"rating_diff={self.rating_diff}"

@@ -65,7 +65,8 @@ class MasterFD(BaseFD):
         for detector in self.triggered:
             detector.explain(fh = fh)
 
-    def get_score(self):        
+    def get_score(self):
+
         for detector_name, detector in self._detectors.items():
             detector_score = detector.get_score()
             # carefully join

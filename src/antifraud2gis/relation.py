@@ -250,11 +250,10 @@ class RelationDict:
             self.medianreviews = int(np.median(list(reviews_per_user.values())))
 
         # count list of all dangerous users
-        for rel in self.dangerous():
-            for u in rel.users():
-                self.dangerous_users.add(u.public_id)
+        #for rel in self.dangerous():
+        #    for u in rel.users():
+        #        self.dangerous_users.add(u.public_id)
 
-        self.nrisk_users = int(100*len(self.dangerous_users) / self.nusers)
 
     def __repr__(self):
         self.calc()
