@@ -67,7 +67,7 @@ class Settings():
         return f"risk_hit={self.risk_hit_th} risk_median_th={self.risk_median_th} risk_highrate_th={self.risk_highrate_th} " \
             f"empty_user={self.empty_user} apply_empty_user_min={self.apply_empty_user_min}" \
             f" risk_user_ratio={self.risk_user_ratio} " \
-            f"happy_long_rel_th={self.happy_long_rel} happy_long_rel_happy_ratio={self.happy_long_rel_happy_ratio}" \
+            f"happy_long_rel_th={self.happy_long_rel} happy_long_rel_happy_ratio={self.happy_long_rel_happy_ratio} " \
             f"median_user_age={self.median_user_age} " \
             f"sametitle_rel={self.sametitle_rel} sametitle_ratio={self.sametitle_ratio} " \
             f"rating_diff={self.rating_diff}"
