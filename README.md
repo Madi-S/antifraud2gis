@@ -20,6 +20,8 @@ jq 'select(.oid == "70000001041490377")' /tmp/export.jsonl
 zcat ~/.af2gis-storage/companies/141265770459396-reviews.json.gz | jq '.[].provider'
 zcat ~/.af2gis-storage/companies/141265770459396-reviews.json.gz | jq '.[] | {id, provider}'
 
+zcat ~/.af2gis-storage/companies/70000001021506525-reviews.json.gz | jq '.[] | select(.provider == "2gis") | .date_created'
+
 # get length (number of companies)r
 jq -s 'length' /tmp/export.jsonl
 

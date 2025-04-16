@@ -11,6 +11,7 @@ from argalias import ArgAlias
 import os
 import sys
 import requests
+import numpy as np
 
 
 from ..company import CompanyList, Company
@@ -146,7 +147,7 @@ def get_args():
 
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("cmd", choices=['company-users', 'user-reviews', 'queue', 'explore', 'ip', 'filldb', 'dev'])
+    parser.add_argument("cmd", choices=['company-users', 'user-reviews', 'queue', 'explore', 'provider', 'ip', 'filldb', 'dev'])
     parser.add_argument("-v", "--verbose", default=False, action='store_true')
     parser.add_argument("--full", default=False, action='store_true')
     parser.add_argument("args", nargs='*', help='extra args')
@@ -261,7 +262,78 @@ def main():
 
         print(f"Done. Inserted {inserted} records, already exists.")
 
-        
+    elif cmd == "provider":
+        provider = args.args[0]
+        try:
+            th = int(args.args[1])
+        except IndexError:
+            th = 0
+        print("th:", th)
+
+        processed = 0
+        provider_ratio = list()
+        over_th = 0
+        higher = 0
+        lower = 0
+
+        # max PROVIDER ratio among LO companies
+        maxlo = 0
+
+        for c in cl.companies(oid=args.company, name=args.name, town=args.town, report=args.report, noreport=args.noreport):
+            nprov = 0
+            total = 0
+            ratio = 0 
+            pr = list()
+            r = list()
+            c.load_reviews()
+            for rev in c.reviews():                
+                total += 1
+                if rev.provider == provider:
+                    nprov += 1
+                    pr.append(rev.rating)
+                else:
+                    r.append(rev.rating)
+
+
+
+            if nprov:
+                ratio = int(100*nprov/total)
+
+                # avg rating other providers
+                avg = np.mean(r)
+                # avg rating this provider
+                avg_prov = np.mean(pr)
+
+                if avg_prov > avg:
+                    higher += 1
+                    hl_str = "HI"
+                    if avg_prov > avg + 1:
+                        hl_str = "HI+"
+                else:
+                    lower += 1
+                    hl_str = "LO"
+                    if ratio > maxlo:
+                        maxlo = ratio
+
+                if ratio > th:
+                    over_th += 1
+                    print(f"{c.object_id} {c.get_title()} {hl_str} ({avg:.1f}) {provider}: {nprov} / {total} = {ratio} ({avg_prov:.1f})")
+
+            else:
+                # print(f"{c.object_id} {c.get_title()} no ratings from {provider}")
+                pass
+            
+            processed += 1
+            provider_ratio.append(ratio)
+
+        print(f"processed {processed} companies")
+        nz_provider_ratio = list(filter(None, provider_ratio))
+        print(f"companies with 0 reviews from {provider}: {len(provider_ratio) - len(nz_provider_ratio)}")
+        print(f"avg ratio of {provider}: {np.mean(nz_provider_ratio):.1f} ({np.mean(provider_ratio):.1f} overall)")
+        print(f"over th ({th}): {over_th} ({100*over_th/processed:.1f}%)")
+        print(f"hi: {higher} lo: {lower} hi/lo: {higher/lower:.2f}")
+        print(f"maxlo: {maxlo}")
+
     elif cmd == "explore":
 
         if args.town is None:
@@ -303,6 +375,6 @@ def main():
                     return
     elif cmd == "dev":
         pass
-    
+
             
 
