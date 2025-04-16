@@ -26,6 +26,7 @@ from ..logger import logger
 from ..session import session
 from ..utils import random_company
 from ..companydb import update_company, check_by_oid, get_by_oid, dbsearch, dbtruncate, make_connection
+from ..db import db
 
 def countdown(n=5):
     for i in range(n, 0, -1):
@@ -274,13 +275,18 @@ def main():
             for rev in u.reviews():
                 if rev.get_town().lower() != town:
                     continue
-                
+
+                if db.is_nocompany(rev.oid):
+                    logger.info(f"Skip nocompany {rev.oid} {rev.title}")
+                    continue
+
                 if not cl.company_exists(rev.oid):
                     cooldown_queue(10)
                     try:
                         c = Company(rev.oid)
                     except AFNoCompany as e:
                         logger.info(f"AFNoCompany {rev.oid} {rev.title}")
+                        db.add_nocompany(rev.oid)
                         continue
 
                     logger.info(f"{submitted}: new company {rev.get_town()} {rev.oid} {rev.title}")
