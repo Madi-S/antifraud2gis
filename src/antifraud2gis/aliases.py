@@ -85,6 +85,40 @@ aliases = {
     '4504127921282909': {
         'alias': 'sheremetevo',
     },
+
+    '141265770878134': {
+        'alias': 'lenta'
+    },
+    '141265769737695': {
+        'alias': 'lenta2'
+    },
+    '141265769524556': {
+        'alias': 'lenta3'
+    },
+    '141265769640819': {
+        'alias': 'auchan'
+    },
+    '141265770910298': {
+        'alias': 'auchan2'
+    },
+    '141265770140530': {
+        'alias': 'auchan3'
+    },
+    '70000001021506525': {
+        'alias': 'hotdogmaster'
+    },
+    '70000001051303735': {
+        'alias': 'hotdogmaster2'
+    },
+    '70000001017423547': {
+        'alias': 'hotdogmaster3'
+    },
+
+
+
+
+    
+
 }
 
 def resolve_alias(alias: str):

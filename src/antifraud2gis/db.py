@@ -4,6 +4,16 @@ import json
 from loguru import logger
 
 
+
+"""
+    class to skip no-users (private users) and no-companies (e.g. geo objects, deleted companies)
+    no-company examples:
+        70030076824955120
+        70000001026994387
+        70000001052074829
+        70000001037658506
+        141373143684631    
+"""
 class MyDB:
     def __init__(self, directory=Path("~/.cache").expanduser()):
         self.directory = directory

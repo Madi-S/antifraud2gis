@@ -20,6 +20,7 @@ from .exceptions import AFNoCompany
 from .aliases import resolve_alias
 from .statistics import statistics
 from .aliases import aliases, resolve_alias
+from .db import db
 
 # to avoid circular import
 #class RelationDict:
@@ -445,6 +446,7 @@ class CompanyList():
 
         for f in self.path.glob('*-basic.json.gz'):
             company_oid = f.name.split('-')[0]
+
             c = Company(company_oid)
             # print("created c", c.report_path)
             if company_match(c, oid=oid, name=name, town=town, detection=detection, report=report, noreport=noreport):

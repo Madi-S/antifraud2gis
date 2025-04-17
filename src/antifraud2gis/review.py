@@ -102,4 +102,4 @@ class Review():
         else:
             title = "<NO TITLE>"
 
-        return f'Review({self.created_str} {self.uid} {user_str} (rating:{self.rating} {photo_str}) > {self.oid} {title})'
+        return f'Review({self.created_str} {self.provider} {self.uid} {user_str} {self.rating}) > {self.oid} {title})'

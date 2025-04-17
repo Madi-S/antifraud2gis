@@ -112,7 +112,12 @@ def main():
         compare(c1, c2)
 
     elif args.cmd == "info":
-        c = Company(args.company)
+        
+        try:
+            c = Company(args.company)
+        except AFNoCompany:
+            print(f"Company {args.company} not found")
+            return
         basic = json.load(gzip.open(c.basic_path))
         print(c)
         print_json(data=basic)
