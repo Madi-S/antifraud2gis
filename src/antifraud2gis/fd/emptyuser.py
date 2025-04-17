@@ -44,11 +44,6 @@ class EmptyUserFD(BaseFD):
         
     def get_score(self):
 
-        empty_users_ratio = int(100 * len(self.empty_ratings) / ((len(self.empty_ratings) + len(self.non_empty_ratings))))
-
-        empty_users_r = None
-        non_empty_users_r = None
-
         if len(self.empty_ratings) < settings.apply_empty_user_min:
             self.score['empty_rating'] = 'Few empty user reviews :)'
             return self.score
@@ -56,6 +51,11 @@ class EmptyUserFD(BaseFD):
         if len(self.non_empty_ratings) < settings.apply_empty_user_min:
             self.score['empty_rating'] = 'Few verifiable user reviews available :('
             return self.score
+
+        empty_users_ratio = int(100 * len(self.empty_ratings) / ((len(self.empty_ratings) + len(self.non_empty_ratings))))
+
+        empty_users_r = None
+        non_empty_users_r = None
 
         empty_users_r = float(np.mean(self.empty_ratings))
         non_empty_users_r = float(np.mean(self.non_empty_ratings))
