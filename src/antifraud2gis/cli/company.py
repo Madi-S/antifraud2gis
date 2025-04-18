@@ -9,7 +9,7 @@ from rich.text import Text
 from ..company import Company, CompanyList
 from ..fraud import detect, compare, dump_report
 from ..tasks import fraud_task
-from ..exceptions import AFReportNotReady, AFNoCompany
+from ..exceptions import AFReportNotReady, AFNoCompany, AFNoTitle
 from ..settings import settings
 from .summary import printsummary
 from ..user import reset_user_pool

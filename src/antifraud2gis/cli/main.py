@@ -24,7 +24,7 @@ from ..tasks import submit_fraud_task, cooldown_queue
 from ..logger import loginit, logger, testlogger
 from ..db import db
 from ..const import REDIS_DRAMATIQ_QUEUE
-from ..exceptions import AFNoCompany, AFReportNotReady, AFReportAlreadyExists
+from ..exceptions import AFNoCompany, AFReportNotReady, AFReportAlreadyExists, AFNoTitle
 from ..settings import settings
 from ..statistics import statistics
 from ..aliases import resolve_alias
@@ -115,7 +115,7 @@ def main():
         
         try:
             c = Company(args.company)
-        except AFNoCompany:
+        except (AFNoCompany, AFNoTitle):
             print(f"Company {args.company} not found")
             return
         basic = json.load(gzip.open(c.basic_path))
@@ -146,10 +146,20 @@ def main():
                 print(f"Need company filter for {args.cmd}")
                 sys.exit(1)
 
+        if args.cmd == "wipe" and args.company:
+            # do not iterate over list, do not create Company() object, company may be broken. just wipe and forget.
+            Company.wipe(args.company)
+            return
+
+
         # if company is given, create it first (if it's missing)
-        if args.company and args.cmd not in ['wipe', 'submitfraud']:
-            Company(args.company)
-        
+        if args.company and args.cmd not in ['wipe']:
+            try:
+                Company(args.company)
+            except (AFNoCompany, AFNoTitle):
+                print("No such company (geo or no 2gis reviews)")
+                return
+
         # PRE PROCESSING
         if args.cmd == "delreport":
             # force args.report

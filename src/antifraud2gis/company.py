@@ -16,7 +16,7 @@ from .const import DATAFORMAT_VERSION, SLEEPTIME, WSS_THRESHOLD, LOAD_NREVIEWS, 
 from .user import User, get_user
 from .review import Review
 from .session import session
-from .exceptions import AFNoCompany
+from .exceptions import AFNoCompany, AFNoTitle
 from .aliases import resolve_alias
 from .statistics import statistics
 from .aliases import aliases, resolve_alias
@@ -293,6 +293,10 @@ class Company:
 
         self.count_rate()
 
+
+        if self.title is None:
+            self.update_title()
+
         with gzip.open(self.reviews_path, 'wt') as f:
             json.dump(self._reviews, f)
 
@@ -402,6 +406,32 @@ class Company:
             self.title = ci['name']
             self.address = ci['address']
             return
+
+    def update_title(self):
+        """ set self.title/address from user's reviews """
+        for r in self._reviews:
+            upid = r['user']['public_id']
+                        
+            if upid is None:
+                # print("skip: no public_id", r['user']['name'])
+                continue
+
+            # logger.debug(f"Loading user {r['user']['name']} {upid} ({idx+1}/{len(self._reviews)})")
+            user = get_user(upid)
+            user.load()
+            ci = user.get_company_info(self.object_id)
+            if ci is None:
+                # print(f"no company info for me {self.object_id}, process next user")
+                continue
+
+            # print(f"found company info for me {self.object_id} in user {user}")
+            self.title = ci['name']
+            self.address = ci['address']
+            return
+
+        raise AFNoTitle(f"No title for {self.object_id}")        
+
+
 
     def delete(self):
         # delete all files about company

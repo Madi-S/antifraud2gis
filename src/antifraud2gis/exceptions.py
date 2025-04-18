@@ -10,3 +10,6 @@ class AFNoCompany(AFException):
 class AFReportAlreadyExists(AFException):
     pass
 
+class AFNoTitle(AFException):
+    """ cannot get title from reviews (probably reviews from 2gis provider) """
+    pass

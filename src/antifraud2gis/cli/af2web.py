@@ -23,7 +23,7 @@ from dramatiq import get_broker
 from rich import print_json
 
 from ..company import Company, CompanyList
-from ..exceptions import AFReportNotReady, AFNoCompany
+from ..exceptions import AFReportNotReady, AFNoCompany, AFNoTitle
 from ..tasks import submit_fraud_task, get_qsize
 from ..settings import settings
 from ..const import REDIS_TASK_QUEUE_NAME, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_WORKER_STATUS
@@ -68,7 +68,7 @@ async def home(request: Request):
 async def explain(request: Request, oid: str):
     try:
         c = Company(oid)
-    except AFNoCompany:
+    except (AFNoCompany, AFNoTitle):
         return RedirectResponse(app.url_path_for("miss", oid=oid))
 
     if c.explain_path.exists():
@@ -80,7 +80,7 @@ async def explain(request: Request, oid: str):
 async def report(request: Request, oid: str):
     try:
         c = Company(oid)
-    except AFNoCompany:
+    except (AFNoCompany, AFNoTitle) :
         return RedirectResponse(app.url_path_for("miss", oid=oid))
         # raise HTTPException(status_code=404, detail="Company not found")
 
@@ -134,7 +134,7 @@ async def miss(request: Request, oid: str):
         c = Company(oid)
         assert c.title is not None
 
-    except (AFNoCompany, AssertionError) as e:
+    except (AFNoCompany, AFNoTitle, AssertionError) as e:
         return templates.TemplateResponse(
             "nocompany.html", {
                 "request": request, "oid": oid,
