@@ -46,6 +46,7 @@ class Settings():
         # do not run empty-user if less then N users available empty/real
         self.apply_empty_user_min = int(os.getenv('APPLY_EMPTY_USER', '20'))
         self.apply_median_rpu = int(os.getenv('APPLY_MEDIAN_RPU', '20'))
+        self.apply_median_userage = int(os.getenv('APPLY_MEDIAN_UA', '20'))
 
         self.rating_diff = float(os.getenv('RATING_DIFF', '1.2'))
 
@@ -66,11 +67,12 @@ class Settings():
 
     def param_fp(self):
         return f"risk_hit={self.risk_hit_th} risk_median_th={self.risk_median_th} risk_highrate_th={self.risk_highrate_th} " \
-            f"empty_user={self.empty_user} apply_empty_user_min={self.apply_empty_user_min} " \
+            f"empty_user={self.empty_user} " \
             f"risk_user_ratio={self.risk_user_ratio} " \
             f"happy_long_rel_th={self.happy_long_rel} happy_long_rel_happy_ratio={self.happy_long_rel_happy_ratio} " \
-            f"median_user_age={self.median_user_age} median_rpu={self.median_rpu}" \
+            f"median_user_age={self.median_user_age} median_rpu={self.median_rpu} " \
             f"sametitle_rel={self.sametitle_rel} sametitle_ratio={self.sametitle_ratio} " \
+            f"apply_empty_user_min={self.apply_empty_user_min} apply_median_rpu={self.apply_median_rpu} apply_median_userage={self.apply_median_userage} " \
             f"rating_diff={self.rating_diff}"
 
 

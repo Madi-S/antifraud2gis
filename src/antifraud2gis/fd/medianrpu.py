@@ -63,6 +63,7 @@ class MedianRPUFD(BaseFD):
         if self.median_rpu <= settings.median_rpu and self.rating_diff > settings.rating_diff:
             self.score['detections'].append(f"median_rpu: {self.median_rpu} <= {settings.median_rpu} "\
                 f"({len(self.lrpu_ratings)} of {self.processed} users) rdiff: {self.rating_diff}")
+            logger.debug(f"median_rpu: {self.median_rpu} <= {settings.median_rpu} ({len(self.lrpu_ratings)} of {self.processed} users) rdiff: {self.rating_diff} ({settings.rating_diff})")
     
         return self.score
     

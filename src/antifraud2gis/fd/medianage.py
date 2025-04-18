@@ -7,6 +7,7 @@ from ..user import User
 from ..company import Company
 from ..review import Review
 from ..settings import settings
+from ..logger import logger
 
 """
     test companies for medianage (detect): 
@@ -23,6 +24,7 @@ class MedianAgeFD(BaseFD):
         self.records = list()
         self.low_rating = 0
         self.agerate = np.empty((0, 2), dtype=int)
+        self.processed = 0
 
     def feed(self, cr: Review, empty: bool = False):
 
@@ -33,8 +35,12 @@ class MedianAgeFD(BaseFD):
 
         self.agerate = np.vstack([self.agerate, [cr.user_age, cr.rating]])
         self.records.append(f"{u.public_id} ({u.name} {cr.created_str} - {u.birthday_str}) = {cr.user_age}")
+        self.processed += 1
 
     def get_score(self):
+
+        if self.processed <= settings.apply_median_userage:
+            return self.score
 
         if len(self.agerate) == 0:
             return self.score
@@ -56,8 +62,8 @@ class MedianAgeFD(BaseFD):
         
 
         if len(young_ratings) >= settings.median_user_age_nusers \
-            and self.median_age <= settings.median_user_age \
-            and self.rating_diff >= settings.rating_diff:
+                and self.median_age <= settings.median_user_age \
+                and self.rating_diff >= settings.rating_diff:
             self.score['young_rating'] = self.young_rating
             self.score['old_rating'] = self.old_rating
             self.score['median_user_age'] = self.median_age
@@ -65,6 +71,7 @@ class MedianAgeFD(BaseFD):
                                             f"({len(young_ratings)} of {self.agerate.shape[0]}) " \
                                             f"and rating_diff {self.young_rating}-{self.old_rating}={self.rating_diff} >= {settings.rating_diff}")
             self.score['detections'].append(self.detection)
+            logger.debug(f"median_user_age {self.median_age} <= {settings.median_user_age} ({len(young_ratings)} of {self.agerate.shape[0]})")
 
         return self.score
     
