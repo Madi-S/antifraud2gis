@@ -15,6 +15,8 @@ from .fd import BaseFD
 from .emptyuser import EmptyUserFD
 from .medianage import MedianAgeFD
 from .relation import RelationFD
+from .medianrpu import MedianRPUFD
+
 from ..settings import settings
 
 class MasterFD(BaseFD):
@@ -39,7 +41,8 @@ class MasterFD(BaseFD):
         self._detectors = {
             'empty_user': EmptyUserFD(c, explain=explain),
             'median_age': MedianAgeFD(c, explain=explain),
-            'relation': RelationFD(c, explain=explain)
+            'median_rpu': MedianRPUFD(c, explain=explain),
+            'relation': RelationFD(c, explain=explain)            
         }
         self._users = set()
         self.providers = defaultdict(int)
