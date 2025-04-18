@@ -44,8 +44,8 @@ class Settings():
         self.empty_user = float(os.getenv('EMPTY_USER', '75'))
         
         # do not run empty-user if less then N users available empty/real
-        self.apply_empty_user_min = int(os.getenv('APPLY_EMPTY_USER', '10'))
-
+        self.apply_empty_user_min = int(os.getenv('APPLY_EMPTY_USER', '20'))
+        self.apply_median_rpu = int(os.getenv('APPLY_MEDIAN_RPU', '20'))
 
         self.rating_diff = float(os.getenv('RATING_DIFF', '1.2'))
 

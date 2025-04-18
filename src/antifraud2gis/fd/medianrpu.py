@@ -23,6 +23,7 @@ class MedianRPUFD(BaseFD):
         self.rpu_list = list()
         self.lrpu_ratings = list()
         self.hrpu_ratings = list()
+        self.processed = 0
 
 
     def feed(self, cr: Review, empty: bool = False):
@@ -41,7 +42,12 @@ class MedianRPUFD(BaseFD):
         if self.explain and u.nreviews() <= settings.median_rpu:
             self.records.append(f"{u.public_id} {u.name} rating: {cr.rating} num_reviews: {u.nreviews()}")
 
+        self.processed += 1
+
     def get_score(self):
+
+        if self.processed <= settings.apply_median_rpu:
+            return self.score
 
         self.median_rpu = int(np.median(self.rpu_list))
 
@@ -52,11 +58,11 @@ class MedianRPUFD(BaseFD):
         logger.debug(f"median_rpu: {self.median_rpu} threshold: {settings.median_rpu}")
         logger.debug(f"low_rpu_rating: {self.low_rpu_rating} - high_rpu_rating: {self.high_rpu_rating} = {self.rating_diff} ({settings.rating_diff})")
 
-        self.score['median_rpu'] = f"{self.median_rpu} ({len(self.lrpu_ratings)}/{len(self.lrpu_ratings + self.hrpu_ratings)} users has RPU < {settings.median_rpu})"
+        self.score['median_rpu'] = f"{self.median_rpu} ({len(self.lrpu_ratings)}/{self.processed} users has RPU < {settings.median_rpu})"
         
         if self.median_rpu <= settings.median_rpu and self.rating_diff > settings.rating_diff:
             self.score['detections'].append(f"median_rpu: {self.median_rpu} <= {settings.median_rpu} "\
-                f"({len(self.lrpu_ratings)} of {len(self.lrpu_ratings + self.hrpu_ratings)} users) rdiff: {self.rating_diff}")
+                f"({len(self.lrpu_ratings)} of {self.processed} users) rdiff: {self.rating_diff}")
     
         return self.score
     
