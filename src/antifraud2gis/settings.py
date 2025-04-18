@@ -26,6 +26,7 @@ class Settings():
         self.happy_long_rel = int(os.getenv('HAPPY_LONG_REL', '10'))
         self.happy_long_rel_min_towns = int(os.getenv('HAPPY_LONG_REL_MIN_TOWNS', '3'))
 
+        # median rpu for relations/printing
         self.risk_median_th = int(os.getenv('RISK_MEDIAN_TH', '15'))
         self.show_hit_th = int(os.getenv('SHOW_HIT_TH', '1000'))
 
@@ -48,7 +49,7 @@ class Settings():
 
         self.rating_diff = float(os.getenv('RATING_DIFF', '1.2'))
 
-        self.median_rpu = float(os.getenv('MEDIAN_RPU', '2'))
+        self.median_rpu = float(os.getenv('MEDIAN_RPU', '5'))
         
         # 2 year old maximum 365
         self.max_review_age = int(os.getenv('MAX_REVIEW_AGE', '730'))
@@ -65,10 +66,10 @@ class Settings():
 
     def param_fp(self):
         return f"risk_hit={self.risk_hit_th} risk_median_th={self.risk_median_th} risk_highrate_th={self.risk_highrate_th} " \
-            f"empty_user={self.empty_user} apply_empty_user_min={self.apply_empty_user_min}" \
-            f" risk_user_ratio={self.risk_user_ratio} " \
+            f"empty_user={self.empty_user} apply_empty_user_min={self.apply_empty_user_min} " \
+            f"risk_user_ratio={self.risk_user_ratio} " \
             f"happy_long_rel_th={self.happy_long_rel} happy_long_rel_happy_ratio={self.happy_long_rel_happy_ratio} " \
-            f"median_user_age={self.median_user_age} " \
+            f"median_user_age={self.median_user_age} median_rpu={self.median_rpu}" \
             f"sametitle_rel={self.sametitle_rel} sametitle_ratio={self.sametitle_ratio} " \
             f"rating_diff={self.rating_diff}"
 
