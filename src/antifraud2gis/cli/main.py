@@ -131,7 +131,7 @@ def main():
         print(f"{len(report['relations'])} relations")
         
     elif args.cmd == "search":
-        res = dbsearch(args.args[0])
+        res = dbsearch(args.args[0], detection=args.detection)
         for rec in res:
             print(rec)
         

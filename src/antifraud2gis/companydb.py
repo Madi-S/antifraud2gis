@@ -41,7 +41,7 @@ def get_by_oid(oid: str, conn = None) -> Optional[dict]:
     col_names = [desc[0] for desc in cursor.description]
     return dict(zip(col_names, row))
 
-def dbsearch(query: str, limit=20, conn = None) -> list[dict]:
+def dbsearch(query: str, limit=20, detection=None, conn = None) -> list[dict]:
     conn = conn or make_connection()
     words = query.strip().lower().split()
     if not words:
@@ -49,6 +49,16 @@ def dbsearch(query: str, limit=20, conn = None) -> list[dict]:
 
     clauses = " AND ".join(["searchstr LIKE ? "] * len(words))
     params = [f"%{w}%" for w in words]
+
+    if detection == "trusted":
+        clauses += " AND trusted"
+    elif detection == "untrusted":
+        clauses += " AND NOT trusted"
+    else:
+        # detection should be found in detections
+        if detection:
+            clauses += " AND detections LIKE ?"
+            params.append(f"%{detection}%")
 
     sql = f"SELECT * FROM company WHERE {clauses} LIMIT {limit}"
     cursor = conn.cursor()
