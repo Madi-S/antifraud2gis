@@ -49,6 +49,7 @@ def get_args():
     aa.alias(["info"], "i")
     aa.alias(["fraud"], "f", "fr")
     aa.alias(["submitfraud"], "sf", "sfr")
+    aa.alias(["compare"], "cmp")
     
     aa.skip_flags()
     aa.parse()
