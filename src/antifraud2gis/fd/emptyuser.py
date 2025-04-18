@@ -6,6 +6,7 @@ from ..user import User
 from ..company import Company
 from ..review import Review
 from ..settings import settings
+from ..logger import logger
 
 """
 test: 141265769524555
@@ -63,6 +64,9 @@ class EmptyUserFD(BaseFD):
         # self.score['empty-users'] = len(self.empty_ratings)
         # self.score['non-empty-users'] = len(self.non_empty_ratings)
         self.score['empty_user_ratio'] = empty_users_ratio      
+
+        logger.debug(f"empty_user_ratio {empty_users_ratio}% >= {settings.empty_user}%")
+        logger.debug(f"empty_rating({empty_users_r:.1f}) - non_empty_rating({non_empty_users_r:.1f}) = {(empty_users_r - non_empty_users_r):.1f} >= {settings.rating_diff}")
 
         if empty_users_ratio >= settings.empty_user and (empty_users_r - non_empty_users_r ) >= settings.rating_diff:
             self.score['detections'].append(f'empty_user_ratio {empty_users_ratio}% >= {settings.empty_user}%; ' \
