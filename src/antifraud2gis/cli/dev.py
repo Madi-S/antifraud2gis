@@ -19,7 +19,7 @@ from ..company import CompanyList, Company
 from ..user import User, reset_user_pool
 from ..settings import settings
 from ..fraud import detect, dump_report
-from ..exceptions import AFNoCompany
+from ..exceptions import AFNoCompany, AFNoTitle
 from ..aliases import aliases
 from .summary import printsummary
 from ..tasks import submit_fraud_task, cooldown_queue
@@ -83,7 +83,7 @@ def findnew():
             except KeyError as e:
                 try:
                     c = Company(r.oid)
-                except AFNoCompany as e:
+                except (AFNoCompany, AFNoTitle) as e:
                     continue
                 detect(c, cl)
                 dump_report(r.oid)
@@ -396,7 +396,7 @@ def main():
                     cooldown_queue(10)
                     try:
                         c = Company(rev.oid)
-                    except AFNoCompany as e:
+                    except (AFNoCompany, AFNoTitle) as e:
                         logger.info(f"AFNoCompany {rev.oid} {rev.title}")
                         db.add_nocompany(rev.oid)
                         continue
