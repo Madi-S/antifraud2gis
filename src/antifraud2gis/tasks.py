@@ -11,7 +11,6 @@ from .logger import logger
 from .const import REDIS_WORKER_STATUS, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_TASK_QUEUE_NAME, REDIS_DRAMATIQ_QUEUE
 from .user import reset_user_pool
 from .statistics import statistics
-from .search import index_company
 
 broker = dramatiq.get_broker()
 

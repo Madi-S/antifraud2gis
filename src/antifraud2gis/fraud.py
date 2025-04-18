@@ -23,7 +23,6 @@ from .settings import settings
 from .exceptions import AFReportNotReady, AFNoCompany, AFReportAlreadyExists
 # from .usernotes import Usernotes
 from .fd.master import MasterFD
-from .search import company_indexed, index_company
 
 def detect(c: Company, cl: CompanyList, explain: bool = False, force=False):
 

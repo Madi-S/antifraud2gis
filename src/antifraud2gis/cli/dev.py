@@ -390,7 +390,7 @@ def main():
 
         for idx, u in enumerate(User.users()):
             
-            if idx % 100 == 0:
+            if idx % 1000 == 0:
                 print(f"Processed {idx}/{total_users} users")
 
             cooldown_queue(10)
