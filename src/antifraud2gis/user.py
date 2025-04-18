@@ -194,9 +194,15 @@ class User:
         for file in settings.user_storage.glob('*-reviews.json.gz'):
             yield User(file.stem.split('-')[0])
 
+    @staticmethod
+    def nusers():
+        return sum(1 for _ in settings.user_storage.glob('*-reviews.json.gz'))
+
     def __repr__(self):
         return f'User({self.name} (rev: {len(self._reviews) if self._reviews else "not loaded"}) {self.url})'
-    
+
+
+
 def get_user(public_id: str) -> User:
     global user_pool
     if public_id not in user_pool:

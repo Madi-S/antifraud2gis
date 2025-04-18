@@ -6,6 +6,7 @@ import redis
 import random
 from rich import print_json
 from rich.text import Text
+from rich.progress import Progress
 from pathlib import Path
 from argalias import ArgAlias
 import os
@@ -383,13 +384,23 @@ def main():
         town = args.town.lower()
         submitted = 0
 
-        for u in User.users():
+        print("total users:", User.nusers())
+        
+        total_users=User.nusers()
+
+        for idx, u in enumerate(User.users()):
+            
+            if idx % 100 == 0:
+                print(f"Processed {idx}/{total_users} users")
+
+            cooldown_queue(10)
+
             for rev in u.reviews():
                 if rev.get_town().lower() != town:
                     continue
 
                 if db.is_nocompany(rev.oid):
-                    logger.info(f"Skip nocompany (in db) {rev.oid} {rev.title}")
+                    # logger.info(f"Skip nocompany (in db) {rev.oid} {rev.title}")
                     continue
 
                 if not cl.company_exists(rev.oid):
@@ -397,7 +408,7 @@ def main():
                     try:
                         c = Company(rev.oid)
                     except (AFNoCompany, AFNoTitle) as e:
-                        logger.info(f"AFNoCompany {rev.oid} {rev.title}")
+                        # logger.info(f"AFNoCompany {rev.oid} {rev.title}")
                         db.add_nocompany(rev.oid)
                         continue
 
@@ -413,6 +424,7 @@ def main():
                     logger.info("Stopfile found, exit")
                     stopfile.unlink()
                     return
+
     elif cmd == "dev":
         pass
 
