@@ -321,14 +321,14 @@ def main():
         print(f"Tasks ({len(tasks)}): {tasks[:5]} ")
         print(f"Trusted ({lastn}/{trusted_len}):")
         for c in last_trusted[:lastn]:
-            print_json(data=c)
-            # print(f"  {c['oid']} {c['title']} {c['rating']} {c['reason']}")
+            # print_json(data=c)
+            print(f"  {c['oid']} {c['title']} ({c['rating']}) {c['score'].get('reason')}")
 
 
         print(f"Untrusted ({lastn}/{untrusted_len})")
         for c in last_untrusted[:lastn]:
-            print_json(data=c)
-            # print(f"  {c['oid']} {c['title']} {c['rating']} {c['score'].get('detections')}")
+            # print_json(data=c)
+            print(f"  {c['oid']} {c['title']} ({c['rating']}) {c['score'].get('detections')}")
 
 
     elif cmd == "sys":
