@@ -14,7 +14,7 @@ import sys
 import requests
 from collections import defaultdict
 import numpy as np
-
+import json
 
 from ..company import CompanyList, Company
 from ..user import User, reset_user_pool
@@ -310,12 +310,24 @@ def main():
         untrusted_len = r.llen(REDIS_UNTRUSTED_LIST)
         dqlen = r.llen(REDIS_DRAMATIQ_QUEUE)
 
+        last_trusted = [json.loads(item) for item in r.lrange(REDIS_TRUSTED_LIST, 0, -1)]
+        last_untrusted = [json.loads(item) for item in r.lrange(REDIS_UNTRUSTED_LIST, 0, -1)]
+
+        lastn = 5
+
         print("Queue report")
         print(f"Worker status: {wstatus}")
         print(f"Dramatiq queue: {dqlen}")
         print(f"Tasks ({len(tasks)}): {tasks[:5]} ")
-        print(f"Trusted ({trusted_len})")
-        print(f"Untrusted ({untrusted_len})")
+        print(f"Trusted ({lastn}/{trusted_len}):")
+        for c in last_trusted[:lastn]:
+            print(f"  {c['oid']} {c['title']} {c['rating']}")
+
+
+        print(f"Untrusted ({lastn}/{untrusted_len})")
+        for c in last_untrusted[:lastn]:
+            print(f"  {c['oid']} {c['title']} {c['rating']}")
+
 
     elif cmd == "sys":
 
