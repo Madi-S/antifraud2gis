@@ -35,6 +35,7 @@ class Company:
     def __init__(self, object_id: str):
         assert object_id is not None
 
+
         object_id = resolve_alias(object_id)
 
         if not object_id.isdigit():
@@ -72,6 +73,11 @@ class Company:
 
         self.load_basic()
         self.relations = None
+
+        if self.title is None:
+            self.update_title()
+
+
 
     @staticmethod
     def wipe(object_id: str):
@@ -294,10 +300,6 @@ class Company:
 
         self.count_rate()
 
-
-        if self.title is None:
-            self.update_title()
-
         with gzip.open(self.reviews_path, 'wt') as f:
             json.dump(self._reviews, f)
 
@@ -418,9 +420,11 @@ class Company:
         env = lmdb.open(settings.lmdb_user_storage.as_posix(), map_size=LMDB_MAP_SIZE)
 
         with env.begin() as txn:
-            val = txn.get(b"company:" + self.object_id.encode())
-            if val:
-                print("VAL:", val)
+            jdata = txn.get(b"object:" + self.object_id.encode())
+            if jdata:
+                data = json.loads(jdata)
+                self.title = data['name']
+                self.address = data['address']
                 return
 
 
