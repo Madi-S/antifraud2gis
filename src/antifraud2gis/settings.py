@@ -7,8 +7,11 @@ class Settings():
         load_dotenv()
         self.storage = Path("~/.af2gis-storage").expanduser()
         self.user_storage = self.storage / "users"
+        self.lmdb_user_storage = self.storage / "users.lmdb"
+
         self.private_user_storage = self.storage / "users" / "_private.json"
         self.company_storage = self.storage / "companies"
+
         # self.search = self.storage / "search.jsonl"
         # self.searchnew = self.storage / "searchnew.jsonl"
         self.companydb = self.storage / "companies.db"

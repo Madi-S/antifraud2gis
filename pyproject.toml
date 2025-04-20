@@ -15,7 +15,8 @@ dependencies = [
     "dramatiq[redis, watch]",
     "markdown",
     "python-frontmatter",
-    "evalidate"
+    "evalidate",
+    "lmdb"
     ]
 requires-python = ">=3.8"
 authors = [{ name = "Yaroslav Polyakov", email = "yaroslaff@gmail.com" }]

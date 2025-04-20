@@ -15,6 +15,8 @@ import requests
 from collections import defaultdict
 import numpy as np
 import json
+import gzip
+import lmdb
 
 from ..company import CompanyList, Company
 from ..user import User, reset_user_pool
@@ -24,7 +26,8 @@ from ..exceptions import AFNoCompany, AFNoTitle
 from ..aliases import aliases
 from .summary import printsummary
 from ..tasks import submit_fraud_task, cooldown_queue
-from ..const import REDIS_TASK_QUEUE_NAME, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_WORKER_STATUS, REDIS_DRAMATIQ_QUEUE, REVIEWS_KEY
+from ..const import REDIS_TASK_QUEUE_NAME, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_WORKER_STATUS, REDIS_DRAMATIQ_QUEUE, REVIEWS_KEY, \
+                        LMDB_MAP_SIZE
 from ..logger import logger
 from ..session import session
 from ..utils import random_company
@@ -231,6 +234,27 @@ def do_provider(args, cl):
         print(f"hi: {higher} lo: {lower} hi/lo: {hilorate:.2f}")
         print(f"maxlo: {maxlo}")
 
+def lmdb_dump(args):
+
+    lmdb_path = args.args[0]
+    print("Dump", lmdb_path)
+
+    env = lmdb.open(lmdb_path, readonly=True)
+    with env.begin() as txn:
+        with txn.cursor() as cur:
+            for key, val in cur:
+                if key.startswith(b'object:'):
+                    data = json.loads(val.decode())
+                    print(key.decode())
+                    print_json(data=data)
+                elif key.startswith(b'user:'):
+                    # set data based on gzipped json in val
+                    data = json.loads(val.decode())
+                    print(key.decode())
+                    print_json(data=data)
+                else:
+                    print(key.decode(), val[:100])
+
 
 def get_args():
 
@@ -245,7 +269,7 @@ def get_args():
 
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("cmd", choices=['company-users', 'user-reviews', 'company-reviews', 'queue', 'explore', 'provider', 'sys', 'filldb', 'dev'])
+    parser.add_argument("cmd", choices=['company-users', 'user-reviews', 'company-reviews', 'queue', 'explore', 'provider', 'sys', 'filldb', 'dev', 'lmdb', 'convert'])
     parser.add_argument("-v", "--verbose", default=False, action='store_true')
     parser.add_argument("--full", default=False, action='store_true')
     parser.add_argument("args", nargs='*', help='extra args')
@@ -440,7 +464,23 @@ def main():
                     return
 
     elif cmd == "dev":
-        pass
+        uid = "aaaa015a2499448191810842ffe0f609"
+        u = User(uid)
+        u.lmdb_save()
 
-            
+
+    elif cmd == "convert":
+        nusers = User.nusers()
+        env = lmdb.open(settings.lmdb_user_storage.as_posix(), map_size=LMDB_MAP_SIZE)
+        
+        with env.begin(write=True) as txn:
+            for idx, u in enumerate(User.users()):
+                print(f"{idx}/{nusers} {u.public_id}")
+                u.lmdb_save(txn=txn)
+
+        
+
+    elif cmd == "lmdb":
+        lmdb_dump(args)        
+
 

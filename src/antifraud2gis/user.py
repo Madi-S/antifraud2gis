@@ -8,10 +8,12 @@ from rich.pretty import Pretty
 from rich import print_json
 import traceback
 import sys
+import datetime
 import gzip
+import lmdb
 
 from .db import db
-from .const import WSS_THRESHOLD, LOAD_NREVIEWS, SLEEPTIME
+from .const import WSS_THRESHOLD, LOAD_NREVIEWS, SLEEPTIME, LMDB_MAP_SIZE
 from .settings import settings
 from .statistics import statistics
 from .session import session
@@ -45,7 +47,36 @@ class User:
         self._reviews = list()
         self.load(local_only=True)
 
+    def lmdb_load(self, local_only=False):
+        # prepare data structures
+        objects = dict()
+        reviews = list()
+
+        env = lmdb.open(settings.lmdb_user_storage.as_posix(), map_size=LMDB_MAP_SIZE)
+
+        with env.begin() as txn:
+            val = txn.get(b"user:" + self.public_id.encode())
+            if val:
+                self._reviews = json.loads(val)
+                return
+            
+            # not found in db
+            if local_only is False:                
+                loaded = False
+                while not loaded:
+                    try:
+                        self.load_from_network()
+                        loaded = True
+                    except Exception as e:
+                        print(f"Error loading user {self.public_id}: {e}")
+                        time.sleep(5)
+
+
+
     def load(self, local_only=False):
+        return self.lmdb_load(local_only=local_only)
+
+    def old_load(self, local_only=False):
         if self._reviews:
             # already loaded
             return
@@ -69,6 +100,45 @@ class User:
                         print(f"Error loading user {self.public_id}: {e}")
                         time.sleep(5)
 
+    def lmdb_save(self, txn = None):
+        
+        """ """
+        def save_txn():
+            txn.put(b'user:' + self.public_id.encode(), json.dumps(reviews).encode())
+
+            for oid, odata in objects.items():
+                txn.put(b'object:' + oid.encode(), json.dumps(odata).encode())
+
+
+        # prepare data structures
+        objects = dict()
+        reviews = list()
+
+        for r in self._reviews:
+            # update objects
+            objects[r['object']['id']] = {
+                'name': r['object']['name'],
+                'address': r['object']['address']
+            }
+
+            created = datetime.datetime.strptime(r['date_created'].split('T')[0], "%Y-%m-%d")
+
+            reviews.append({
+                'rating': r['rating'],
+                'oid': r['object']['id'],
+                'uid':  r['user']['public_id'],
+                'user_name':  r['user']['name'],
+                'provider': r['provider'],
+                'created': created.strftime("%Y-%m-%d")
+            })
+
+        if txn:
+            save_txn()
+        else:
+            env = lmdb.open(settings.lmdb_user_storage.as_posix(), map_size=LMDB_MAP_SIZE)
+
+            with env.begin(write=True) as txn:
+                save_txn()
 
     def nreviews(self):
         self.load()
@@ -79,14 +149,15 @@ class User:
         if not self._reviews:
             # private profile
             return None
-        r = Review(sorted(self._reviews, key=lambda r: r['date_created'])[0])
+
+        r = Review(sorted(self._reviews, key=lambda r: r['created'])[0])
         return r.created
 
     def towns(self):
         self.load()
         towns = set()
         for r in self.reviews():
-            print_json(data=r)
+            # print_json(data=r)
             towns.add(r.oid)
         return towns
 
@@ -103,7 +174,7 @@ class User:
     def reviews(self):
         self.load()
         # reviews are sorted by date_edited desc, not by date_created, we need to re-sort
-        for r in sorted(self._reviews, key=lambda r: r['date_created']):
+        for r in sorted(self._reviews, key=lambda r: r['created']):
             yield Review(r, user=self)
 
     def review_for(self, oid: str) -> Review:
@@ -172,8 +243,13 @@ class User:
 
         # print(f"user {self.name} loaded {len(self._reviews)} reviews")
         # print("save to", self.reviews_path)
-        with gzip.open(self.reviews_path, 'wt') as f:
-            json.dump(self._reviews, f)
+        #with gzip.open(self.reviews_path, 'wt') as f:
+        #    json.dump(self._reviews, f)
+        try:
+            self.lmdb_save()
+        except Exception as e:
+            print(f"Error saving user {self.public_id}: {e}")            
+            sys.exit(1)
 
         statistics.total_users_loaded_network += 1
         statistics.total_users_loaded += 1
@@ -185,7 +261,8 @@ class User:
     @property
     def name(self):
         if self._reviews:
-            return self._reviews[0]['user']['name']
+            return self._reviews[0]['user_name']
+            # return self._reviews[0]['user']['name']
         else:
             return None
 

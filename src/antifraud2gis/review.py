@@ -3,21 +3,29 @@ from rich import print_json
 
 class Review():
     def __init__(self, data, user=None, company=None):
+        # data is either from our local db or from 2gis company
         self._data = data
-        self.review_id = data['id']
+        
+
+        # self.review_id = data['id']
         self.rating = data['rating']
-        self.oid = data['object']['id']
-        self.uid = data['user']['public_id']
-        self.user_name = data['user']['name']
-        self.text = data.get('text')        
-        self.nphotos = len(data['photos'])
+        self.oid = data.get('oid') or data['object']['id']
+        self.uid = data.get('uid') or data['user']['public_id']
+        self.user_name = data.get('user_name') or data['user']['name']
+        self.text = data.get('text')
         self.provider = data.get('provider')
 
         self._user = None
         self._company = company
         self.user_age = None
 
-        self.created = datetime.datetime.strptime(data['date_created'].split('T')[0], "%Y-%m-%d")
+        date = data.get('date_created') or data['created']
+
+        if 'T' in date:
+            self.created = datetime.datetime.strptime(date.split('.')[0], "%Y-%m-%dT%H:%M:%S")
+        else:
+            self.created = datetime.datetime.strptime(date, "%Y-%m-%d")
+        # self.created = datetime.datetime.strptime(data['date_created'].split('T')[0], "%Y-%m-%d")
 
         # age from today (grows every time)
         self.age = (datetime.datetime.now() - self.created).days
