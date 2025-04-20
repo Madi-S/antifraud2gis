@@ -6,13 +6,14 @@ import sys
 import gzip
 import traceback
 import numpy as np
+import lmdb
 from rich.progress import Progress
 from rich import print_json
 from rich.pretty import pretty_repr
 from requests.exceptions import RequestException
 
 from .settings import settings
-from .const import DATAFORMAT_VERSION, SLEEPTIME, WSS_THRESHOLD, LOAD_NREVIEWS, REVIEWS_KEY
+from .const import DATAFORMAT_VERSION, SLEEPTIME, WSS_THRESHOLD, LOAD_NREVIEWS, REVIEWS_KEY, LMDB_MAP_SIZE
 from .user import User, get_user
 from .review import Review
 from .session import session
@@ -387,6 +388,9 @@ class Company:
         # print(self.title, self.address, "err:",self.error)
 
         self.load_reviews()
+        return
+    
+        # OLD CODE, lmdb do not 
         for idx, r in enumerate(self._reviews):
             upid = r['user']['public_id']
                         
@@ -409,6 +413,18 @@ class Company:
 
     def update_title(self):
         """ set self.title/address from user's reviews """
+
+
+        env = lmdb.open(settings.lmdb_user_storage.as_posix(), map_size=LMDB_MAP_SIZE)
+
+        with env.begin() as txn:
+            val = txn.get(b"company:" + self.object_id.encode())
+            if val:
+                print("VAL:", val)
+                return
+
+
+        return
         for r in self._reviews:
             upid = r['user']['public_id']
                         

@@ -168,6 +168,9 @@ class User:
     def get_company_info(self, oid):
         self.load()
         for r in self.reviews():
+            print("qqq")
+            print(type(r))
+            print(r)
             if r.oid == oid:
                 return r._data['object']
 

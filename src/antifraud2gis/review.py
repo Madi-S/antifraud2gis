@@ -96,7 +96,6 @@ class Review():
         # print_json(data=self._data)
         from .user import User
 
-        photo_str = f"{self.nphotos}p" if self.nphotos else ""
         text_str = len(self.text) if self.text else ""
 
         if self.uid is None:
