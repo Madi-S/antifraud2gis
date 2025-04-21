@@ -119,7 +119,6 @@ def detect(c: Company, cl: CompanyList, explain: bool = False, force=False):
 
 
 def dump_report(object_id: str):
-
     c = Company(object_id)
     if c.error:
         print(f"ERROR for {c.get_title()} ({c.address}): {c.error}")

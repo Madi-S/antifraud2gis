@@ -36,7 +36,7 @@ class Settings():
 
 
         # for relations and median age
-        self.risk_highrate_th = float(os.getenv('RISK_HIGHRATE_TH', '5'))
+        self.risk_highrate_th = float(os.getenv('RISK_HIGHRATE_TH', '4.9'))
         # self.risk_highrate_hit_th = float(os.getenv('RISK_HIGHRATE_HIT_TH', '5'))
         # self.risk_highrate_median_th = float(os.getenv('RISK_HIGHRATE_MEDIAN_TH', '15'))
 

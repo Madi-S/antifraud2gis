@@ -322,7 +322,6 @@ class RelationDict:
             if rel.count < min(settings.show_hit_th, settings.risk_hit_th):
                 continue
 
-
             try:
                 _c = Company(rel.b)
             except AFNoCompany:
