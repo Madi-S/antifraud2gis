@@ -113,6 +113,49 @@ a.logo-link {
     gap: 10px;
 }
 
+.search-form select {
+    padding: 8px 36px 8px 12px; /* больше отступ справа */
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background-color: #fff;
+    font-size: 14px;
+    color: #333;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%23999' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 10px 6px;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-form select:focus {
+    border-color: #66afe9;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102, 175, 233, 0.3);
+}
+
+.search-form input[type="text"] {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #333;
+    background-color: #fff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-form input[type="text"]:focus {
+    border-color: #66afe9;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102, 175, 233, 0.3);
+}
+
+
+
+
 #oid {
     flex-grow: 1;
     padding: 10px;
@@ -162,7 +205,7 @@ button:disabled {
 .company-list {
     flex: 1;
     padding: 15px;
-    border-radius: 8px;
+    border-radius: 8px;/
 }
 
 .company-list a { color: #333333; text-decoration: none;}

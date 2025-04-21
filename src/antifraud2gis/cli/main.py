@@ -13,6 +13,8 @@ from rich.console import Console
 from rich.table import Table
 import redis
 import gzip
+import lmdb
+
 
 from pathlib import Path
 
@@ -50,6 +52,7 @@ def get_args():
     aa.alias(["fraud"], "f", "fr")
     aa.alias(["submitfraud"], "sf", "sfr")
     aa.alias(["compare"], "cmp")
+    aa.alias(["summary"], "sum", "s")
     
     aa.skip_flags()
     aa.parse()
@@ -132,7 +135,7 @@ def main():
         print(f"{len(report['relations'])} relations")
         
     elif args.cmd == "search":
-        res = dbsearch(args.args[0], detection=args.detection)
+        res = dbsearch(args.args[0], detection=args.detection, addr=args.town)
         for rec in res:
             print(rec)
         

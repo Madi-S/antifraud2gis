@@ -222,16 +222,21 @@ async def submit(request: Request, oid: str = Form(...), force: bool = Form(Fals
 
 
 @app.get("/search", response_class=HTMLResponse)
-async def search_view(request: Request, query: str):
+async def search_view(request: Request, query: str, detections: str):
 
     limit = 50
+    
+    if detections in ["trusted", "untrusted"]:
+        detections_arg = detections
+    else:
+        detections_arg = None
 
     if query.isdigit() and len(query) >= 12:
         return RedirectResponse(app.url_path_for("report", oid=query), status_code=303)
     else:
         # results = search(query, limit=25)
-        results = dbsearch(query, limit=50)
-        print(f"got {len(results)} results for {query!r}")
+
+        results = dbsearch(query, detection=detections_arg, limit=50)
 
         last_trusted = [json.loads(item) for item in r.lrange(REDIS_TRUSTED_LIST, 0, -1)]
         last_untrusted = [json.loads(item) for item in r.lrange(REDIS_UNTRUSTED_LIST, 0, -1)]
@@ -240,6 +245,7 @@ async def search_view(request: Request, query: str):
             "search.html", {
                 "request": request,
                 "query": query,
+                "detections": detections,
                 "title": f"Поиск: {query}",
                 "results": results,
                 "trusted": last_trusted,

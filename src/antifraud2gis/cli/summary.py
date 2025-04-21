@@ -5,15 +5,20 @@ from rich.table import Table
 import time
 import sys
 import re
+import lmdb
 from pathlib import Path
+
+from collections import defaultdict
+
 
 from ..logger import logger
 
+from ..const import LMDB_MAP_SIZE
 from ..company import Company, CompanyList
 from ..fraud import detect
 from ..db import db
 from ..settings import settings
-
+from ..user import User
 
 def add_summary_parser(subparsers):
     sum_parser = subparsers.add_parser("summary", help="Operations with whole database")
@@ -27,6 +32,8 @@ def add_summary_parser(subparsers):
 def printsummary(cl: CompanyList, full=False):
 
     global last_summary
+
+    logger.info(f"SUMMARY request")
 
     userpath = settings.user_storage
     total = len(list(cl.companies()))    
@@ -44,6 +51,17 @@ def printsummary(cl: CompanyList, full=False):
 
     logger.info(f"SUMMARY Companies: {total=}, {nerr=} {ncalc=} {nncalc=}")
     
+    env = lmdb.open(settings.lmdb_user_storage.as_posix(), readonly=True)
+    prefixes = defaultdict(int)
+    with env.begin() as txn:
+        with txn.cursor() as cur:
+            for key, val in cur:
+                keyprefix = key.decode().split(':')[0]
+                prefixes[keyprefix] += 1
+                #print(keyprefix)
+    logger.info(f"SUMMARY LMDB prefixes: {dict(prefixes)}")
+
+
     if full:
         user_reviews_count = sum(1 for p in userpath.iterdir() if p.is_file())
         logger.info(f"SUMMARY Users with reviews: {user_reviews_count}")

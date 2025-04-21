@@ -24,8 +24,13 @@
     <div class="search-container">
         <form class="search-form" id="search-form" method="GET" action="/search">
             <input type="text" id="oid" name="query" value="{{query}}" placeholder="Введите название компании или 2GIS object_id" required>
+            <select name="detections">
+                <option value="all" {% if detections == 'all' %}selected{% endif %}>Все</option>
+                <option value="trusted" {% if detections == 'trusted' %}selected{% endif %}>Проверенные</option>
+                <option value="untrusted" {% if detections == 'untrusted' %}selected{% endif %}>Аномальные</option>
+            </select>
             <button type="submit">Найти</button>
-        </form>
+        </form>        
     </div>
     
 
