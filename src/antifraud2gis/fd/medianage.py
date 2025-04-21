@@ -34,7 +34,7 @@ class MedianAgeFD(BaseFD):
         u = cr.user
 
         self.agerate = np.vstack([self.agerate, [cr.user_age, cr.rating]])
-        self.records.append(f"{u.public_id} ({u.name} {cr.created_str} - {u.birthday_str}) = {cr.user_age}")
+        self.records.append(f"{u.public_id} {cr.rating} ({u.name} {cr.created_str} - {u.birthday_str}) = {cr.user_age}")
         self.processed += 1
 
     def get_score(self):
