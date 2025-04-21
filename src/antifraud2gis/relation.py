@@ -1,6 +1,6 @@
 from .company import Company
 from .settings import settings
-from .exceptions import AFNoCompany
+from .exceptions import AFNoCompany, AFCompanyError
 from .logger import logger
 from .review import Review
 import os
@@ -324,7 +324,7 @@ class RelationDict:
 
             try:
                 _c = Company(rel.b)
-            except AFNoCompany:
+            except (AFNoCompany, AFCompanyError):
                 # print(f"Ignore NO-COMPANY {rel.b} with {rel.count} hits")
                 continue
             data = dict()
