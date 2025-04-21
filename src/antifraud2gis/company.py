@@ -413,43 +413,20 @@ class Company:
             self.address = ci['address']
             return
 
-    def update_title(self):
+    @staticmethod
+    def resolve_oid(object_id: str):
         """ set self.title/address from user's reviews """
-
-
         env = lmdb.open(settings.lmdb_user_storage.as_posix(), map_size=LMDB_MAP_SIZE)
 
         with env.begin() as txn:
-            jdata = txn.get(b"object:" + self.object_id.encode())
+            jdata = txn.get(b"object:" + object_id.encode())
             if jdata:
                 data = json.loads(jdata)
-                self.title = data['name']
-                self.address = data['address']
-                return
+                return data['name'], data['address']
 
-
-        return
-        for r in self._reviews:
-            upid = r['user']['public_id']
-                        
-            if upid is None:
-                # print("skip: no public_id", r['user']['name'])
-                continue
-
-            # logger.debug(f"Loading user {r['user']['name']} {upid} ({idx+1}/{len(self._reviews)})")
-            user = get_user(upid)
-            user.load()
-            ci = user.get_company_info(self.object_id)
-            if ci is None:
-                # print(f"no company info for me {self.object_id}, process next user")
-                continue
-
-            # print(f"found company info for me {self.object_id} in user {user}")
-            self.title = ci['name']
-            self.address = ci['address']
-            return
-
-        raise AFNoTitle(f"No title for {self.object_id}")        
+    def update_title(self):
+        """ set self.title/address from user's reviews """
+        self.title, self.address = Company.resolve_oid(self.object_id)
 
 
 

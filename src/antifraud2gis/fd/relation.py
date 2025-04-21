@@ -68,7 +68,7 @@ class RelationFD(BaseFD):
                 if rel.check_high_ratings():
                     self.happy_hirel += 1
                     self.happy_hirel_companies.append(rel.b)
-                    self.towns.add(rel.get_btown())
+                    self.towns.add(rel.get_btown())                    
                     self.titles.add(rel.get_btitle())
 
                     for u in rel.users():
@@ -98,7 +98,7 @@ class RelationFD(BaseFD):
         print(f"Explanation for relations", file=fh)
 
         # explain hirel
-        print(f"Hirel is ({len(self.happy_hirel_companies)}): {self.happy_hirel_companies}", file=fh)
+
 
         for dline in self.score['detections']:
             dname = dline.split()[0]

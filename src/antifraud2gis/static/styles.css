@@ -153,7 +153,15 @@ a.logo-link {
     box-shadow: 0 0 0 3px rgba(102, 175, 233, 0.3);
 }
 
+.examples {
+    margin-top: 0.5em;
+    font-size: 0.9em;
+    color: #666;
+    display: flex;
+    flex-wrap: wrap; /* позволяет элементам переноситься на новые строки */
+    gap: 1.5em; /* добавляет промежутки между элементами */
 
+}
 
 
 #oid {

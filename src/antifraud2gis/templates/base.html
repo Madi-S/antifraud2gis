@@ -31,6 +31,14 @@
             </select>
             <button type="submit">Найти</button>
         </form>        
+
+        <div class="examples">
+            {% set examples = ["141265770941878", "4504127908547616", "кафе", "зоопарк новосибирск"] %}
+            {% for example in examples %}
+                <a href="#" onclick="setQuery('{{ example }}'); return false;">{{ example }}</a>
+            {% endfor %}
+                </div>
+                
     </div>
     
 

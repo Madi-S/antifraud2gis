@@ -4,6 +4,8 @@ from rich import print_json
 class Review():
     def __init__(self, data, user=None, company=None):
         # data is either from our local db or from 2gis company
+        from .company import Company
+
         self._data = data
         
 
@@ -36,20 +38,7 @@ class Review():
             self.set_user(user)
         
 
-        if self._company:
-            self.title = self._company.title
-            self.address = self._company.address
-
-        else:
-            try:
-                self.title = data['object']['name']
-            except KeyError:
-                self.title = None
-
-            try:
-                self.address = data['object']['address']
-            except KeyError:
-                self.address = None
+        self.title, self.address = Company.resolve_oid(self.oid)
 
     def set_user(self, user):
         self._user = user

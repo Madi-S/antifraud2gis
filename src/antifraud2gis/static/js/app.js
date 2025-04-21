@@ -40,4 +40,8 @@ function main(){
     make_toggle_link();
 }
 
+function setQuery(text) {
+    document.getElementById('oid').value = text;
+}
+
 main()
