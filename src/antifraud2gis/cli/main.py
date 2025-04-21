@@ -135,9 +135,11 @@ def main():
         print(f"{len(report['relations'])} relations")
         
     elif args.cmd == "search":
-        res = dbsearch(args.args[0], detection=args.detection, addr=args.town)
+        res = dbsearch(args.args[0], detection=args.detection, addr=args.town, limit=500)
         for rec in res:
             print(rec)
+        if args.fmt == 'full':
+            print("total:", len(res))
         
 
     elif args.cmd in ["list", "fraud", "delreport", "wipe", "submitfraud", "export"]:

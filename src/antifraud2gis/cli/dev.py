@@ -22,7 +22,7 @@ from ..company import CompanyList, Company
 from ..user import User, reset_user_pool
 from ..settings import settings
 from ..fraud import detect, dump_report
-from ..exceptions import AFNoCompany, AFNoTitle
+from ..exceptions import AFNoCompany, AFNoTitle, AFCompanyError
 from ..aliases import aliases
 from .summary import printsummary
 from ..tasks import submit_fraud_task, cooldown_queue
@@ -464,9 +464,47 @@ def main():
                     return
 
     elif cmd == "dev":
-        uid = "aaaa015a2499448191810842ffe0f609"
-        u = User(uid)
-        u.lmdb_save()
+
+        _tmp_total = 0
+        _tmp_none = 0
+        _tmp_hastitle = 0
+        _type_error = 0
+        _comp_error = 0
+        _updated = 0
+
+        for idx, f in enumerate(settings.company_storage.glob('*-basic.json.gz')):
+            company_oid = f.name.split('-')[0]
+
+            print(idx, company_oid)
+            # load this .jzon.gz file
+            with gzip.open(f, 'rt') as f:
+                _tmpdata = json.load(f)
+
+                if _tmpdata['title']:
+                    _tmp_hastitle += 1
+                else:
+                    print("NO TITLE FOR ", company_oid)
+                    try:
+                        # _tmp_title, _tmp_addr = Company.resolve_oid(company_oid)
+                        try:
+                            _c = Company(company_oid)
+                            print("UPDATED", _c)
+                            _updated += 1
+                            _c.save_basic()
+                        except AFCompanyError:
+                            _comp_error += 1
+                            continue
+                    except TypeError:
+                        print("TYPE ERROR", company_oid)
+                        _type_error += 1
+                        continue
+                    # print("RESOLVED TO", _tmp_title, _tmp_addr)
+                    _tmp_none += 1
+                _tmp_total+=1
+                print(f"total {_tmp_total} title: {_tmp_hastitle} none: {_tmp_none} type_error: {_type_error}, {_comp_error=} {_updated=}")
+
+
+
 
 
     elif cmd == "convert":

@@ -13,3 +13,7 @@ class AFReportAlreadyExists(AFException):
 class AFNoTitle(AFException):
     """ cannot get title from reviews (probably reviews from 2gis provider) """
     pass
+
+class AFCompanyError(AFException):
+    # constructor will throw it if company has error
+    pass

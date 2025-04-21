@@ -62,7 +62,7 @@ class MasterFD(BaseFD):
 
         if cr.is_empty() or cr.user.public_id in self._users:
             if cr.uid is not None and cr.user.public_id in self._users:
-                print(f"User {cr.user.public_id} {cr.created} {cr.provider} already processed DUPLICATE !!!")
+                # print(f"User {cr.user.public_id} {cr.created} {cr.provider} already processed DUPLICATE !!!")
                 pass
             self.score['empty_reviews'] += 1
             empty = True

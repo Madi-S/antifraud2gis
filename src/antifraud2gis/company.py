@@ -17,7 +17,7 @@ from .const import DATAFORMAT_VERSION, SLEEPTIME, WSS_THRESHOLD, LOAD_NREVIEWS, 
 from .user import User, get_user
 from .review import Review
 from .session import session
-from .exceptions import AFNoCompany, AFNoTitle
+from .exceptions import AFNoCompany, AFNoTitle, AFCompanyError
 from .aliases import resolve_alias
 from .statistics import statistics
 from .aliases import aliases, resolve_alias
@@ -72,6 +72,9 @@ class Company:
         self.detections = list()
 
         self.load_basic()
+        if self.error:
+            raise AFCompanyError(f'{self.object_id} ERROR: {self.error}')
+
         self.relations = None
 
         if self.title is None:
@@ -423,6 +426,9 @@ class Company:
             if jdata:
                 data = json.loads(jdata)
                 return data['name'], data['address']
+            else:
+                return f'_magic:{object_id}', 'Narnia'
+
 
     def update_title(self):
         """ set self.title/address from user's reviews """
@@ -471,10 +477,15 @@ class CompanyList():
                 yield c
             return
 
-        for f in self.path.glob('*-basic.json.gz'):
+        for idx, f in enumerate(self.path.glob('*-basic.json.gz')):
             company_oid = f.name.split('-')[0]
 
-            c = Company(company_oid)
+            try:
+
+                c = Company(company_oid)
+            except AFCompanyError as e:
+                # do not use such companies
+                continue
             # print("created c", c.report_path)
             if company_match(c, oid=oid, name=name, town=town, detection=detection, report=report, noreport=noreport):
                 yield c
