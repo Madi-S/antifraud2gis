@@ -22,6 +22,7 @@ from .aliases import resolve_alias
 from .statistics import statistics
 from .aliases import aliases, resolve_alias
 from .db import db
+from .companydb import dbsearch
 
 # to avoid circular import
 #class RelationDict:
@@ -477,6 +478,16 @@ class CompanyList():
                 yield c
             return
 
+        for record in dbsearch(query=name, addr=town, detection=detection, limit=limit):
+            c = Company(record['oid'])
+            yield c
+
+
+
+        return
+    
+
+        # Old very slow file-based code
         for idx, f in enumerate(self.path.glob('*-basic.json.gz')):
             company_oid = f.name.split('-')[0]
 

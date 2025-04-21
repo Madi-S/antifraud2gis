@@ -41,7 +41,13 @@ def get_by_oid(oid: str, conn = None) -> Optional[dict]:
     col_names = [desc[0] for desc in cursor.description]
     return dict(zip(col_names, row))
 
-def dbsearch(query: str, addr: str = None, limit=20, detection=None, conn = None) -> list[dict]:
+def dbsearch(query: str, addr: str = None, limit=None, detection=None, conn = None) -> list[dict]:
+    
+    limit = limit or 100
+
+    # print args
+    # print_json(data={"query": query, "addr": addr, "limit": limit, "detection": detection})
+
     conn = conn or make_connection()
     words = query.strip().lower().split()
     if not words:
@@ -54,6 +60,8 @@ def dbsearch(query: str, addr: str = None, limit=20, detection=None, conn = None
         clauses += " AND trusted"
     elif detection == "untrusted":
         clauses += " AND NOT trusted"
+    elif detection == "null":
+        clauses += " AND trusted IS NULL"
     else:
         # detection should be found in detections
         if detection:
@@ -63,6 +71,8 @@ def dbsearch(query: str, addr: str = None, limit=20, detection=None, conn = None
     if addr:
         clauses += " AND address LIKE ?"
         params.append(f"%{addr}%")
+
+    print("clauses", clauses, params)
 
     sql = f"SELECT * FROM company WHERE {clauses} LIMIT {limit}"
     cursor = conn.cursor()
