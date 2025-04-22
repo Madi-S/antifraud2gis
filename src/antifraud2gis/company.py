@@ -470,7 +470,7 @@ class CompanyList():
         if oid:
             try:
                 c = Company(oid)
-            except AFNoCompany:
+            except (AFCompanyError, AFNoCompany):
                 # no review 70000001096097346
                 return
 
@@ -479,7 +479,11 @@ class CompanyList():
             return
 
         for record in dbsearch(query=name, addr=town, detection=detection, limit=limit):
-            c = Company(record['oid'])
+            try:
+                c = Company(record['oid'])
+            except (AFCompanyError, AFNoCompany):
+                continue
+
             yield c
 
 

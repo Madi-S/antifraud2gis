@@ -49,12 +49,17 @@ def dbsearch(query: str, addr: str = None, limit=None, detection=None, conn = No
     # print_json(data={"query": query, "addr": addr, "limit": limit, "detection": detection})
 
     conn = conn or make_connection()
-    words = query.strip().lower().split()
-    if not words:
-        return []
 
-    clauses = " AND ".join(["searchstr LIKE ? "] * len(words))
-    params = [f"%{w}%" for w in words]
+    if query and query not in ('.', 'ALL'):
+        words = query.strip().lower().split()
+        if not words:
+            return []
+
+        clauses = " AND ".join(["searchstr LIKE ? "] * len(words))
+        params = [f"%{w}%" for w in words]
+    else:
+        clauses = "1"
+        params = []
 
     if detection == "trusted":
         clauses += " AND trusted"
