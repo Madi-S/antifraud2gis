@@ -42,8 +42,8 @@ def get_by_oid(oid: str, conn = None) -> Optional[dict]:
     return dict(zip(col_names, row))
 
 def dbsearch(query: str, addr: str = None, limit=None, detection=None, conn = None) -> list[dict]:
-    
-    limit = limit or 100
+
+    limit = 100 if limit is None else int(limit)
 
     # print args
     # print_json(data={"query": query, "addr": addr, "limit": limit, "detection": detection})
@@ -77,9 +77,8 @@ def dbsearch(query: str, addr: str = None, limit=None, detection=None, conn = No
         clauses += " AND address LIKE ?"
         params.append(f"%{addr}%")
 
-    print("clauses", clauses, params)
-
-    sql = f"SELECT * FROM company WHERE {clauses} LIMIT {limit}"
+    sql = f"SELECT * FROM company WHERE {clauses}"
+    sql += f" LIMIT {limit}" if limit > 0 else ""
     cursor = conn.cursor()
     cursor.execute(sql, params)
     rows = cursor.fetchall()

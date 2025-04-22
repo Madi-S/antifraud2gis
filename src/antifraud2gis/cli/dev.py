@@ -157,7 +157,7 @@ def do_provider(args, cl):
 
     all_providers = defaultdict(int)
 
-    for c in cl.companies(oid=args.company, name=args.name, town=args.town, report=args.report, noreport=args.noreport):
+    for c in cl.companies(oid=args.company, name=args.name, town=args.town, report=args.report, noreport=args.noreport, limit=0):
         nprov = 0
         total = 0
         ratio = 0 
@@ -166,8 +166,6 @@ def do_provider(args, cl):
         skipped = 0
         c.load_reviews()
         for rev in c.reviews():
-
-
 
             if rev.age > settings.max_review_age:
                 skipped += 1
@@ -183,9 +181,8 @@ def do_provider(args, cl):
             else:
                 r.append(rev.rating)
 
-
-
         if nprov:
+            # percent of this provider/total
             ratio = int(100*nprov/total)
 
             # avg rating other providers
@@ -464,6 +461,7 @@ def main():
                     return
 
     elif cmd == "dev":
+        return
 
         _tmp_total = 0
         _tmp_none = 0
