@@ -220,7 +220,7 @@ def do_provider(args, cl):
         
         processed += 1
         provider_ratio.append(ratio)
-
+        reset_user_pool()
 
 
     print(f"processed {processed} company providers: {dict(all_providers)}")
