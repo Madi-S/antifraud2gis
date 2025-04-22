@@ -90,7 +90,6 @@ def detect(c: Company, cl: CompanyList, explain: bool = False, force=False):
             master_detector.feed(cr)    
 
     score = master_detector.get_score()
-    
 
     # logger.info(f"SCORE: {score} for {c.object_id}")
 
@@ -110,7 +109,6 @@ def detect(c: Company, cl: CompanyList, explain: bool = False, force=False):
     c.detections = [ dline.split(' ')[0] for dline in score['detections'] ]
     c.save_basic()
 
-    print_json(data=score)
 
     update_company(c.export())
 

@@ -141,10 +141,18 @@ def handle_dev(args: argparse.Namespace):
 
 def do_provider(args, cl):
     provider = args.args[0]
+
     try:
         th = int(args.args[1])
     except IndexError:
         th = 0
+
+    try:
+        min_nprov_th = int(args.args[2])
+    except IndexError:
+        min_nprov_th = 20
+
+
 
     processed = 0
     provider_ratio = list()
@@ -181,7 +189,7 @@ def do_provider(args, cl):
             else:
                 r.append(rev.rating)
 
-        if nprov:
+        if nprov >= min_nprov_th:
             # percent of this provider/total
             ratio = int(100*nprov/total)
 
@@ -190,6 +198,7 @@ def do_provider(args, cl):
             # avg rating this provider
             avg_prov = np.mean(pr) if pr else 0
 
+            
             if avg_prov > avg:
                 higher += 1
                 hl_str = "HI"
@@ -206,7 +215,7 @@ def do_provider(args, cl):
                 print(f"{processed}: {c.object_id} {c.get_title()} (skip:{skipped}) {hl_str} ({avg:.1f}) {provider}: {nprov} / {total} = {ratio} ({avg_prov:.1f})")
 
         else:
-            print(f"{processed}: {c.object_id} {c.get_title()} NORATINGS from {provider}")
+            print(f"{processed}: {c.object_id} {c.get_title()} NORATINGS({nprov}) from {provider}")
             pass
         
         processed += 1
