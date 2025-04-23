@@ -465,7 +465,7 @@ class CompanyList():
         raise KeyError(f"Company {index} not found")
 
 
-    def companies(self, oid=None, name = None, town = None, detection=None, report = None, noreport = None, limit=None) -> Generator[Company]:
+    def companies(self, oid=None, name = None, town = None, detection=None, report = None, noreport = None, limit=None) -> Generator[Company, None, None]:
         n = 0
 
         if oid:
