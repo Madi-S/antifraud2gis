@@ -196,7 +196,7 @@ def do_provider(args, cl: CompanyList):
             else:
                 r.append(rev.rating)
 
-        if nprov >= min_nprov_th:
+        if nprov > min_nprov_th:
             # percent of this provider/total
             ratio = int(100*nprov/total)
 

@@ -11,6 +11,7 @@ from rich.progress import Progress
 from rich import print_json
 from rich.pretty import pretty_repr
 from requests.exceptions import RequestException
+from typing import Generator
 
 from .settings import settings
 from .const import DATAFORMAT_VERSION, SLEEPTIME, WSS_THRESHOLD, LOAD_NREVIEWS, REVIEWS_KEY, LMDB_MAP_SIZE
@@ -464,7 +465,7 @@ class CompanyList():
         raise KeyError(f"Company {index} not found")
 
 
-    def companies(self, oid=None, name = None, town = None, detection=None, report = None, noreport = None, limit=None):
+    def companies(self, oid=None, name = None, town = None, detection=None, report = None, noreport = None, limit=None) -> Generator[Company]:
         n = 0
 
         if oid:
