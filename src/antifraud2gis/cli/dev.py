@@ -140,8 +140,9 @@ def handle_dev(args: argparse.Namespace):
 
 
 def do_provider(args, cl: CompanyList):
-    provider = args.args[0]
 
+    started = time.time()
+    provider = args.args[0]
 
     try:
         min_nprov_th = int(args.args[1])
@@ -230,7 +231,7 @@ def do_provider(args, cl: CompanyList):
         reset_user_pool()
 
 
-    print(f"processed {processed} company providers: {dict(all_providers)}")
+    print(f"processed {processed} companies in {int(time.time() - started)} sec. providers: {dict(all_providers)}")
     
     if processed:
         # calculage mean share of this provider among all companies and amont companies which has at least one review
