@@ -139,18 +139,21 @@ def handle_dev(args: argparse.Namespace):
         print(u.birthday())
 
 
-def do_provider(args, cl):
+def do_provider(args, cl: CompanyList):
     provider = args.args[0]
 
+
     try:
-        th = int(args.args[1])
+        min_nprov_th = int(args.args[1])
+    except IndexError:
+        min_nprov_th = 20
+
+    try:
+        th = int(args.args[2])
     except IndexError:
         th = 0
 
-    try:
-        min_nprov_th = int(args.args[2])
-    except IndexError:
-        min_nprov_th = 20
+    print(f"# Analyse companies with {min_nprov_th}+ reviews from {provider}, show companies with more then {th}% reviews from {provider}")
 
 
 
@@ -166,6 +169,10 @@ def do_provider(args, cl):
     all_providers = defaultdict(int)
 
     for c in cl.companies(oid=args.company, name=args.name, town=args.town, report=args.report, noreport=args.noreport, limit=0):
+
+        if c.object_id in settings.skip_oids:
+            continue
+
         nprov = 0
         total = 0
         ratio = 0 

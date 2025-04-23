@@ -62,10 +62,15 @@ class Settings():
         self.median_user_age_nusers = int(os.getenv('MEDIAN_USER_AGE_NUSERS', '10'))
 
 
+        # Other system parameters
         self.proxy = os.getenv('HTTPS_PROXY', None)
 
         self.turnstile_sitekey = os.getenv('TURNSTILE_SITEKEY', None)
         self.turnstile_secret = os.getenv('TURNSTILE_SECRET', None)
+
+
+        # Debugging
+        self.skip_oids = list(filter(None, os.getenv('SKIP_OIDS', '').split(' ')))
 
 
     def param_fp(self):
