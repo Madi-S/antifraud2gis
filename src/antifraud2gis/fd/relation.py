@@ -3,11 +3,13 @@ import numpy as np
 
 
 from .fd import BaseFD
-from ..user import User
+from ..user import User, get_user
 from ..company import Company
+from ..companydb import get_by_oid
 from ..review import Review
 from ..settings import settings
 from ..relation import RelationDict
+
 
 
 """
@@ -117,8 +119,17 @@ class RelationFD(BaseFD):
 
 
             if dname == 'risk_users':
+                print(f"Risk users ({len(self.risk_users)} / {self.processed_users} > {settings.risk_user_ratio}%)", file=fh)
+
                 for idx, public_id in enumerate(self.risk_users.keys(), start=1):
-                    print(f"{idx}. {public_id} ({len(self.risk_users[public_id])}): {' '.join(self.risk_users[public_id])}", file=fh)
+                    u = get_user(public_id)
+                    print(f"user #{idx}. {public_id} {u.name} ({len(self.risk_users[public_id])}):", file=fh)
+                    for oid in self.risk_users[public_id]:
+                        crec = get_by_oid(oid)
+                        if crec:
+                            print(f"    {oid} {crec['title']} {crec['address']}", file=fh)
+                        else:
+                            print(f"    {oid} [special-not-a-company]", file=fh)
                 
                 print(f"{len(self.risk_users)} / {self.processed_users} = {self.score['risk_users']}%", file=fh)
                 print("", file=fh)

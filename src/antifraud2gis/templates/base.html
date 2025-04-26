@@ -14,6 +14,19 @@
 
     <!-- captcha -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" defer></script>
+
+    {% if settings.gtag %}
+        <!-- Google tag (gtag.js) -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id={{settings.gtag}}"></script>
+        <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-MEH7Q9ZBRM');
+        </script>
+    {% endif %}
+
 </head>
 <body>
 

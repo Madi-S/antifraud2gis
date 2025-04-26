@@ -98,7 +98,8 @@
                             <td>{{rel.town}}</td>
                             <td class="{{hit_class}}">{{rel.hits}}</td>
                             <td>{{rel.median}}</td>
-                            <td class="{{rate_class}}">{{rel.arating | round(1) }} {{rel.brating | round(1)}}</td>
+                            <td class="{{rate_class}}"><a href="/compare/{{oid}}/{{rel.oid}}">
+                                {{rel.arating | round(1) }} {{rel.brating | round(1)}}</a></td>
                         </tr>
                     {% endfor %}
                 </tbody>

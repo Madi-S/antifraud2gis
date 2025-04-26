@@ -139,10 +139,35 @@ def handle_dev(args: argparse.Namespace):
         print(u.birthday())
 
 
+
+def town_iterator(town: str, nreviews: int):
+    for crec in dbsearch(query='', addr=town, nreviews=nreviews, limit=0):
+        yield crec
+
+
+def nreviews_for_oid(r, oid: str, provider:str):
+    key = f'af2gis:nreviews:{oid}:{provider}'
+    nr = r.get(key)
+    if nr is not None:
+        return int(nr)
+    
+    # calculate and save
+    c = Company(oid)
+    c.load_reviews()
+    nr = c.nreviews(provider=provider)
+    r.set(key, nr)
+    return nr
+
+def do_delkeys(prefix: str):
+    r = redis.Redis(decode_responses=True)
+    for key in r.scan_iter(f"{prefix}*"):
+        print("delete", key)
+        r.delete(key)
+
+
 def do_provider(args, cl: CompanyList):
 
-    started = time.time()
-    provider = args.args[0]
+    redis_conn = redis.Redis(decode_responses=True)
 
     try:
         min_nprov_th = int(args.args[1])
@@ -154,9 +179,10 @@ def do_provider(args, cl: CompanyList):
     except IndexError:
         th = 0
 
+
+    started = time.time()
+    provider = args.args[0]
     print(f"# Analyse companies with {min_nprov_th}+ reviews from {provider}, show companies with more then {th}% reviews from {provider}")
-
-
 
     processed = 0
     provider_ratio = list()
@@ -164,28 +190,34 @@ def do_provider(args, cl: CompanyList):
     higher = 0
     lower = 0
 
-    # max PROVIDER ratio among LO companies
-    maxlo = 0
-
     all_providers = defaultdict(int)
 
-    for c in cl.companies(oid=args.company, name=args.name, town=args.town, report=args.report, noreport=args.noreport, limit=0):
+    for crec in town_iterator(args.town, nreviews=100):
 
-        if c.object_id in settings.skip_oids:
+        if crec['oid'] in settings.skip_oids:
+            continue
+        try:
+            crec['provider_nr'] = nreviews_for_oid(redis_conn, crec['oid'], provider=provider)        
+            if crec['provider_nr'] < min_nprov_th:
+                continue
+
+        except AFCompanyError as e:
             continue
 
+        # here we start processing
         nprov = 0
         total = 0
         ratio = 0 
-        pr = list()
-        r = list()
+        prov_rating = list()
+        rating = list()
         skipped = 0
+        c = Company(crec['oid'])
         c.load_reviews()
-        for rev in c.reviews():
 
-            if rev.age > settings.max_review_age:
-                skipped += 1
-                continue
+        
+
+
+        for rev in c.reviews():
 
             total += 1
 
@@ -193,60 +225,48 @@ def do_provider(args, cl: CompanyList):
 
             if rev.provider == provider:
                 nprov += 1
-                pr.append(rev.rating)
+                prov_rating.append(rev.rating)
             else:
-                r.append(rev.rating)
+                rating.append(rev.rating)
 
-        if nprov > min_nprov_th:
-            # percent of this provider/total
-            ratio = int(100*nprov/total)
+        # percent of this provider/total
+        ratio = int(100*nprov/total)
 
-            # avg rating other providers
-            avg = np.mean(r) if r else 0
-            # avg rating this provider
-            avg_prov = np.mean(pr) if pr else 0
+        # avg rating other providers
+        avg = np.mean(rating) if rating else 0
+        # avg rating this provider
+        avg_prov = np.mean(prov_rating) if prov_rating else 0
 
-            
-            if avg_prov > avg:
-                higher += 1
-                hl_str = "HI"
-                if avg_prov > avg + 1:
-                    hl_str = "HI+"
-            else:
-                lower += 1
-                hl_str = "LO"
-                if ratio > maxlo:
-                    maxlo = ratio
-
-            if ratio > th:
-                over_th += 1
-                print(f"{processed}: {c.object_id} {c.get_title()} (skip:{skipped}) {hl_str} ({avg:.1f}) {provider}: {nprov} / {total} = {ratio} ({avg_prov:.1f})")
-
-        else:
-            print(f"{processed}: {c.object_id} {c.get_title()} NORATINGS({nprov}) from {provider}")
-            pass
         
+        if avg_prov > avg:
+            higher += 1
+            hl_str = "HI"
+            if avg_prov > avg + settings.rating_diff:
+                hl_str = "HI+"
+        else:
+            lower += 1
+            hl_str = "LO"
+
         processed += 1
-        provider_ratio.append(ratio)
-        reset_user_pool()
+
+        if ratio > th:
+            over_th += 1
+            print(f"{processed}: {c.object_id} {c.get_title()} (skip:{skipped}) {hl_str} ({avg:.1f}) {provider}: {nprov} / {total} = {ratio} ({avg_prov:.1f})")
+            print(f"  rating ({len(rating)}): {rating}")
+            print(f"  {provider} rating ({len(prov_rating)}): {prov_rating}")
+
 
 
     print(f"processed {processed} companies in {int(time.time() - started)} sec. providers: {dict(all_providers)}")
     
     if processed:
-        # calculage mean share of this provider among all companies and amont companies which has at least one review
-        mean_provider_ratio = np.mean(provider_ratio) if provider_ratio else 0
-        nz_provider_ratio = list(filter(None, provider_ratio))        
-        nz_mean_provider_ratio = np.mean(nz_provider_ratio) if nz_provider_ratio else 0
-
-
-        print(f"companies with 0 reviews from {provider}: {len(provider_ratio) - len(nz_provider_ratio)}")
-        print(f"avg ratio of {provider}: {nz_mean_provider_ratio:.1f} ({np.mean(mean_provider_ratio):.1f} overall)")
         print(f"over th ({th}): {over_th} ({100*over_th/processed:.1f}%)")
         
         hilorate = higher/lower if lower else 0
         print(f"hi: {higher} lo: {lower} hi/lo: {hilorate:.2f}")
-        print(f"maxlo: {maxlo}")
+
+    return
+
 
 def lmdb_dump(args):
 
@@ -283,7 +303,7 @@ def get_args():
 
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("cmd", choices=['company-users', 'user-reviews', 'company-reviews', 'queue', 'explore', 'provider', 'sys', 'filldb', 'dev', 'lmdb', 'convert'])
+    parser.add_argument("cmd", choices=['company-users', 'user-reviews', 'company-reviews', 'queue', 'explore', 'provider', 'sys', 'filldb', 'dev', 'lmdb', 'convert', 'delkeys'])
     parser.add_argument("-v", "--verbose", default=False, action='store_true')
     parser.add_argument("--full", default=False, action='store_true')
     parser.add_argument("args", nargs='*', help='extra args')
@@ -317,13 +337,13 @@ def main():
         for u in c.users():
             print(u)
 
-    if cmd == "user-reviews":
+    elif cmd == "user-reviews":
         u = User(args.args[0])
         for r in u.reviews():
             print(r)
 
 
-    if cmd == "company-reviews":
+    elif cmd == "company-reviews":
 
         c = Company(args.company)
         c.load_reviews()
@@ -535,5 +555,10 @@ def main():
 
     elif cmd == "lmdb":
         lmdb_dump(args)        
+
+    elif cmd == "delkeys":
+        do_delkeys(args.args[0])
+    else:
+        print(f"Unknown command {cmd!r}")
 
 

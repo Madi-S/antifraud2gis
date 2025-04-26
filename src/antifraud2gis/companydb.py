@@ -41,7 +41,7 @@ def get_by_oid(oid: str, conn = None) -> Optional[dict]:
     col_names = [desc[0] for desc in cursor.description]
     return dict(zip(col_names, row))
 
-def dbsearch(query: str, addr: str = None, limit=None, detection=None, conn = None) -> list[dict]:
+def dbsearch(query: str, addr: str = None, limit=None, nreviews=None, detection=None, conn = None) -> list[dict]:
 
     limit = 100 if limit is None else int(limit)
 
@@ -50,7 +50,7 @@ def dbsearch(query: str, addr: str = None, limit=None, detection=None, conn = No
 
     conn = conn or make_connection()
 
-    if query and query not in ('.', 'ALL'):
+    if query and query not in ('', '.', 'ALL'):
         words = query.strip().lower().split()
         if not words:
             return []
@@ -72,6 +72,10 @@ def dbsearch(query: str, addr: str = None, limit=None, detection=None, conn = No
         if detection:
             clauses += " AND detections LIKE ?"
             params.append(f"%{detection}%")
+
+    if nreviews:
+        clauses += " AND nreviews >= ?"
+        params.append(int(nreviews))
 
     if addr:
         clauses += " AND address LIKE ?"

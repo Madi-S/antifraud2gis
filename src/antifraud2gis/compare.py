@@ -5,8 +5,73 @@ import numpy as np
 from .company import Company
 from .user import get_user
 from .db import db
+from .settings import settings
+
+def quick_compare(a: Company, b: Company, fh = None):
+    """ new quick compare """
+
+    if fh is None:
+        fh = sys.stdout
+
+    a.load_reviews()
+    b.load_reviews()
+
+    print(settings.debug_uids)
+
+    print("A:", a, file=fh)
+    print("B:", b, file=fh)
+    print("--")
+
+    users_a = set(a.users_ids())
+    users_b = set(b.users_ids())
+
+    for uid in settings.debug_uids:
+        if uid in users_a:
+            print(f"User {uid} in A", file=fh)
+        if uid in users_b:
+            print(f"User {uid} in B", file=fh)
+
+    common_uids = users_a & users_b
+
+    a_first = None
+    a_last = None
+    b_first = None
+    b_last = None
+
+    ar = list()
+    br = list()
+
+    for idx, uid in enumerate(common_uids):
+        u = get_user(uid)
+        ua = a.review_from(uid)
+        ub = b.review_from(uid)
+
+        #if ua is None or ub is None:
+        #    continue
+
+        ### calc oldest/newest for a/b reviews
+        if a_first is None or a_first > ua.created:
+            a_first = ua.created
+        if a_last is None or a_last < ua.created:
+            a_last = ua.created
+
+        if b_first is None or b_first > ub.created:
+            b_first = ub.created
+        if b_last is None or b_last < ub.created:
+            b_last = ub.created
+
+        ar.append(ua.rating)
+        br.append(ub.rating)
+
+        print(f"{idx}: {u.url} {u.name!r} {u.nreviews()} A:{ua.rating} {ua.created_str} B:{ub.rating} {ub.created_str}", file=fh)
+
+    print(f"# Reviews for A: {a_first} .. {a_last} avg: {round(np.mean(ar), 1)}", file=fh)
+    print(f"# Reviews for B: {b_first} .. {b_last} avg: {round(np.mean(br), 1)}", file=fh)
+
 
 def compare(a: Company, b: Company):
+
+    """ old and slow but reliable compare  """
 
     debug_oids = os.getenv("DEBUG_OIDS", "").split(" ")
     debug_uids = os.getenv("DEBUG_UIDS", "").split(" ")

@@ -65,13 +65,14 @@ class Settings():
         # Other system parameters
         self.proxy = os.getenv('HTTPS_PROXY', None)
 
+        # web UI
         self.turnstile_sitekey = os.getenv('TURNSTILE_SITEKEY', None)
         self.turnstile_secret = os.getenv('TURNSTILE_SECRET', None)
-
+        self.gtag = os.getenv('GTAG', None)
 
         # Debugging
         self.skip_oids = list(filter(None, os.getenv('SKIP_OIDS', '').split(' ')))
-
+        self.debug_uids = list(filter(None, os.getenv('DEBUG_UIDS', '').split(' ')))
 
     def param_fp(self):
         return f"risk_hit={self.risk_hit_th} risk_median_th={self.risk_median_th} risk_highrate_th={self.risk_highrate_th} " \
@@ -81,7 +82,7 @@ class Settings():
             f"median_user_age={self.median_user_age} median_rpu={self.median_rpu} " \
             f"sametitle_rel={self.sametitle_rel} sametitle_ratio={self.sametitle_ratio} " \
             f"apply_empty_user_min={self.apply_empty_user_min} apply_median_rpu={self.apply_median_rpu} apply_median_userage={self.apply_median_userage} " \
-            f"rating_diff={self.rating_diff}"
+            f"rating_diff={self.rating_diff} max_review_age={self.max_review_age}"
 
 
 settings = Settings()

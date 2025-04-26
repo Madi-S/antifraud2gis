@@ -29,6 +29,7 @@ from ..settings import settings
 from ..const import REDIS_TASK_QUEUE_NAME, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_WORKER_STATUS
 # from ..search import search
 from ..companydb import dbsearch
+from ..compare import compare
 
 app = FastAPI()
 
@@ -47,20 +48,30 @@ r = redis.Redis(decode_responses=True)
 class ReportRequest(BaseModel):
     oid: str
 
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
 
+def render(request, template_name, context: dict):
+    # Добавляем общие данные
 
     last_trusted = [json.loads(item) for item in r.lrange(REDIS_TRUSTED_LIST, 0, -1)]
     last_untrusted = [json.loads(item) for item in r.lrange(REDIS_UNTRUSTED_LIST, 0, -1)]
 
-    return templates.TemplateResponse(
-        "index.html",
+
+    context.update({
+        "request": request,
+        "settings": settings,
+        "trusted": last_trusted,
+        "untrusted": last_untrusted,
+    })
+    return templates.TemplateResponse(template_name, context)
+
+
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+
+    return render(request, "index.html",
         {
             "request": request,
-            "trusted": last_trusted,
-            "untrusted": last_untrusted
-            } 
+        } 
     )
 
 
@@ -74,6 +85,30 @@ async def explain(request: Request, oid: str):
     if c.explain_path.exists():
         explanation = gzip.open(c.explain_path, "rt").read()
         return PlainTextResponse(content=explanation)
+
+
+@app.get("/compare/{oida}/{oidb}", response_class=PlainTextResponse)
+async def route_compare(request: Request, oida: str, oidb: str):
+    try:
+        ca = Company(oida)
+    except (AFNoCompany, AFNoTitle):
+        return RedirectResponse(app.url_path_for("miss", oid=oida))
+
+    try:
+        cb = Company(oidb)
+    except (AFNoCompany, AFNoTitle):
+        return RedirectResponse(app.url_path_for("miss", oid=oidb))
+
+    cmp_report = f"/tmp/af2gis-cmp-{oida}-{oidb}.txt"
+
+    # rewrite as with
+    with open(cmp_report, "w") as fh:
+        compare(ca, cb, fh=fh)
+    
+    # return this file
+    data =  open(cmp_report).read()
+    os.unlink(cmp_report)
+    return PlainTextResponse(content=data)
 
 
 @app.get("/report/{oid}", response_class=HTMLResponse)
@@ -103,7 +138,8 @@ async def report(request: Request, oid: str):
             last_untrusted = [json.loads(item) for item in r.lrange(REDIS_UNTRUSTED_LIST, 0, -1)]
 
 
-            return templates.TemplateResponse(
+            return render(
+                request,
                 "report.html", {
                     "request": request,
                     "settings": settings,
@@ -135,7 +171,8 @@ async def miss(request: Request, oid: str):
         assert c.title is not None
 
     except (AFNoCompany, AFNoTitle, AssertionError) as e:
-        return templates.TemplateResponse(
+        return render(
+            request,
             "nocompany.html", {
                 "request": request, "oid": oid,
                 "trusted": last_trusted,
@@ -146,7 +183,8 @@ async def miss(request: Request, oid: str):
 
 
 
-    return templates.TemplateResponse(
+    return render(
+        request,
         "miss.html", {
             "request": request, "title": c.title, "oid": c.object_id,   
             "settings": settings,
@@ -163,7 +201,7 @@ async def submit(request: Request, oid: str = Form(...), force: bool = Form(Fals
     try:
         c = Company(oid)
     except (AFNoCompany) as e:
-        return templates.TemplateResponse(
+        return render(request,
             "nocompany.html", {
                 "request": request, "oid": oid,
             }
@@ -241,7 +279,8 @@ async def search_view(request: Request, query: str, detections: str):
         last_trusted = [json.loads(item) for item in r.lrange(REDIS_TRUSTED_LIST, 0, -1)]
         last_untrusted = [json.loads(item) for item in r.lrange(REDIS_UNTRUSTED_LIST, 0, -1)]
 
-        return templates.TemplateResponse(
+        return render(
+            request,
             "search.html", {
                 "request": request,
                 "query": query,
@@ -262,7 +301,8 @@ async def progress(request: Request, oid: str):
         c = Company(oid)
         print("miss for", c)
     except (AFNoCompany, AssertionError):
-        return templates.TemplateResponse(
+        return render(
+            request,
             "nocompany.html", {
                 "request": request, "oid": oid,
             }
@@ -287,7 +327,8 @@ async def progress(request: Request, oid: str):
     last_untrusted = [json.loads(item) for item in r.lrange(REDIS_UNTRUSTED_LIST, 0, -1)]
 
 
-    return templates.TemplateResponse(
+    return render(
+        request,
         "progress.html", {
             "request": request, "title": c.title, "oid": c.object_id,
             "qsize": queue_size, "wstatus": wstatus, "qpos": qpos,
@@ -317,7 +358,7 @@ def md_page(request: Request, page: str):
 
 
 
-    return templates.TemplateResponse("markdown.html", {
+    return render(request, "markdown.html", {
         "request": request,
         "title": title,
         "content": content_html,

@@ -7,6 +7,7 @@ import gzip
 import traceback
 import numpy as np
 import lmdb
+import redis
 from rich.progress import Progress
 from rich import print_json
 from rich.pretty import pretty_repr
@@ -194,9 +195,6 @@ class Company:
         return len(self._reviews)
 
     def count_rate(self):
-
-        
-
         self.ratings = list()
         for r in self._reviews:
             if r['rating'] is None:
@@ -216,6 +214,10 @@ class Company:
             if uid is None:
                 continue
             yield User(uid)
+
+    def users_ids(self):
+        for r in self._reviews:
+            yield r['user']['public_id']
 
     def uids(self):
         for r in self._reviews:
@@ -377,12 +379,29 @@ class Company:
 
     def reviews(self):
         for r in self._reviews:
-            yield Review(r, company=self)
-    
-    def nreviews(self):
-        return len(self._reviews)
+            rev = Review(r, company=self)
+            if rev.age > settings.max_review_age:
+                continue
+            yield rev
 
-    def review_from(self, uid: str):
+    def nreviews(self, provider = None):
+
+        if provider is None:
+            return len(self._reviews)
+        # count reviews now myself
+        n = 0
+        for rev in self._reviews:
+            r = Review(rev, company=self)
+            if r.age > settings.max_review_age:
+                continue
+
+            if provider == '*' or rev['provider'] == provider:
+                n += 1
+
+        return n
+
+
+    def review_from(self, uid: str) -> Review:
         self.load_reviews()
         for r in self._reviews:
             if r['user']['public_id'] == uid:
