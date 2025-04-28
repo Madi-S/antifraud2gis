@@ -87,7 +87,7 @@ async def explain(request: Request, oid: str):
         return PlainTextResponse(content=explanation)
 
 
-@app.get("/compare/{oida}/{oidb}", response_class=PlainTextResponse)
+# @app.get("/compare/{oida}/{oidb}", response_class=PlainTextResponse)
 async def route_compare(request: Request, oida: str, oidb: str):
     try:
         ca = Company(oida)
