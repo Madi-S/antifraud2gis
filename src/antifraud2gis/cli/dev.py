@@ -252,8 +252,8 @@ def do_provider(args, cl: CompanyList):
         if ratio > th:
             over_th += 1
             print(f"{processed}: {c.object_id} {c.get_title()} (skip:{skipped}) {hl_str} ({avg:.1f}) {provider}: {nprov} / {total} = {ratio} ({avg_prov:.1f})")
-            print(f"  rating ({len(rating)}): {rating}")
-            print(f"  {provider} rating ({len(prov_rating)}): {prov_rating}")
+            # print(f"  rating ({len(rating)}): {rating}")
+            # print(f"  {provider} rating ({len(prov_rating)}): {prov_rating}")
 
 
 
