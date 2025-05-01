@@ -18,7 +18,36 @@ CREATE TABLE company (
 );
 """
 
+db_inited = False
+
+def init_db():
+    global db_inited
+
+    if db_inited:
+        return
+
+    conn = sqlite3.connect(settings.companydb)
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS company (
+            oid TEXT PRIMARY KEY,
+            title TEXT,
+            address TEXT,
+            town TEXT,
+            searchstr TEXT,
+            rating_2gis REAL,
+            trusted BOOLEAN,
+            nreviews INTEGER,
+            detections TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+    db_inited = True
+
 def make_connection():
+    init_db()
     return sqlite3.connect(settings.companydb)
 
 # Function to check if oid exists in the "company" table
