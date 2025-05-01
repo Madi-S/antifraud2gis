@@ -9,6 +9,19 @@ This project is absolutely unofficial, not related to 2GIS.ru.
 pipx install git+https://github.com/yaroslaff/antifraud2gis
 ~~~
 
+
+## Fraud detection
+~~~
+# by OID:
+af2gis fraud 141265769338187
+
+# by alias
+af2gis fraud nskzoo
+
+# list all aliases:
+af2gis aliases
+~~~
+
 ## Export and analyse data with JQ
 
 ~~~shell

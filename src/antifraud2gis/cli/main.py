@@ -32,6 +32,7 @@ from ..statistics import statistics
 from ..aliases import resolve_alias
 # from ..search import search
 from ..companydb import dbsearch
+from ..aliases import aliases
 
 # CLI
 from .summary import printsummary
@@ -58,7 +59,7 @@ def get_args():
     aa.parse()
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("cmd", choices=['info', 'list','stop','summary', 'fraud', 'compare', 'submitfraud', 'delreport', 'wipe', 'export', 'search'])
+    parser.add_argument("cmd", choices=['info', 'list','stop','summary', 'fraud', 'compare', 'submitfraud', 'delreport', 'wipe', 'export', 'search', 'aliases'])
     parser.add_argument("-v", "--verbose", default=False, action='store_true')
     parser.add_argument("--sleep", type=float, default=None, help='sleep N.M seconds after each processed company')
     parser.add_argument("--fmt", "-f", default="normal", choices=['brief', 'normal', 'full'])
@@ -106,6 +107,10 @@ def main():
             printsummary(cl=cl, full=True)
         else:
             printsummary(cl=cl, full=False)
+
+    elif args.cmd == "aliases":
+        for oid, alias_rec in aliases.items():
+            print(f"{oid} = {alias_rec['alias']}")
 
     elif args.cmd == "compare":
         if len(args.args) != 2:
