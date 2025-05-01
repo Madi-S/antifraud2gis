@@ -74,6 +74,14 @@ class Settings():
         self.skip_oids = list(filter(None, os.getenv('SKIP_OIDS', '').split(' ')))
         self.debug_uids = list(filter(None, os.getenv('DEBUG_UIDS', '').split(' ')))
 
+        self.create_directories()
+
+    def create_directories(self):
+        if not self.user_storage.exists():
+            self.user_storage.mkdir(parents=True)
+        if not self.company_storage.exists():
+            self.company_storage.mkdir(parents=True)
+            
     def param_fp(self):
         return f"risk_hit={self.risk_hit_th} risk_median_th={self.risk_median_th} risk_highrate_th={self.risk_highrate_th} " \
             f"empty_user={self.empty_user} " \

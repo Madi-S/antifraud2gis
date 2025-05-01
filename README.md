@@ -4,6 +4,11 @@ Searching for fake (suspicious) reviews in 2gis.
 
 This project is absolutely unofficial, not related to 2GIS.ru.
 
+## Installation
+~~~
+pipx install git+https://github.com/yaroslaff/antifraud2gis
+~~~
+
 ## Export and analyse data with JQ
 
 ~~~shell
