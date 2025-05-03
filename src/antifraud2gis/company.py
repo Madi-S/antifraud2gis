@@ -19,7 +19,7 @@ from .const import DATAFORMAT_VERSION, SLEEPTIME, WSS_THRESHOLD, LOAD_NREVIEWS, 
 from .user import User, get_user
 from .review import Review
 from .session import session
-from .exceptions import AFNoCompany, AFNoTitle, AFCompanyError
+from .exceptions import AFNoCompany, AFNoTitle, AFCompanyError, AFCompanyNotFound
 from .aliases import resolve_alias
 from .statistics import statistics
 from .aliases import aliases, resolve_alias
@@ -81,7 +81,11 @@ class Company:
         self.relations = None
 
         if self.title is None:
-            self.update_title()
+            try:
+                self.update_title()
+            except AFCompanyNotFound as e:
+                # resolve title by reviews
+                self.update_title_by_reviews()
 
 
 
@@ -127,7 +131,6 @@ class Company:
                 if version != DATAFORMAT_VERSION:
                     logger.debug(f"version mismatch {version} != {DATAFORMAT_VERSION} for {self.object_id}")
                     return False
-
                 self.title = _basic['title']
                 self.alias = _basic['alias']
                 self.remark = _basic['remark']
@@ -141,12 +144,13 @@ class Company:
                 self.branch_rating_2gis = _basic.get('branch_rating_2gis', None)
                 self.trusted = _basic.get('trusted', None)
                 self.detections = _basic.get('detections', list())
+
                 if not self.title:
                     # logger.debug(f"no title for {self.object_id}")
                     pass
                 self.loaded_from_disk = True
                 return bool(self.title)
-        else:            
+        else:
             return False
 
 
@@ -408,7 +412,32 @@ class Company:
                 user = get_user(uid)
                 return Review(r, user=user)
 
+    def update_title_by_reviews(self):
+        self.load_reviews()
+        self.load_users()
+        return
+
+        for r in self._reviews:
+            upid = r['user']['public_id']
+            if upid is None:
+                continue
+
+            user = get_user(upid)
+            user.load()
+            ci = user.get_company_info(self.object_id)
+            if ci is None:
+                # print(f"no company info for me {self.object_id}, process next user")
+                continue
+            else:
+                print("QQQQQQQQQQQQQQQQ")
+                print_json(data=ci)
+
+
+          
+
     def load_basic_from_network(self):
+        # print(f"ZZZZZZ company load basic from network: {self.object_id}")
+        # print("".join(traceback.format_stack(limit=10)))         
 
         # print("load_basic", self.object_id)
         # print(self.title, self.address, "err:",self.error)
@@ -448,14 +477,12 @@ class Company:
                 data = json.loads(jdata)
                 return data['name'], data['address']
             else:
-                return f'_magic:{object_id}', 'Narnia'
+                raise AFCompanyNotFound(f'Company {object_id} not found in LMDB')
 
 
     def update_title(self):
         """ set self.title/address from user's reviews """
         self.title, self.address = Company.resolve_oid(self.object_id)
-
-
 
     def delete(self):
         # delete all files about company

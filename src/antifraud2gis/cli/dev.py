@@ -270,7 +270,11 @@ def do_provider(args, cl: CompanyList):
 
 def lmdb_dump(args):
 
-    lmdb_path = args.args[0]
+    try:
+        lmdb_path = args.args[0]
+    except IndexError:
+        lmdb_path = settings.lmdb_user_storage.as_posix()
+
     print("Dump", lmdb_path)
 
     env = lmdb.open(lmdb_path, readonly=True)

@@ -42,6 +42,7 @@ def retry(max_attempts=3, delay=1):
 
 class User:
     def __init__(self, public_id):
+
         self.public_id = public_id
         self.reviews_path = settings.user_storage / (public_id + '-reviews.json.gz')
         self._reviews = list()
@@ -100,9 +101,9 @@ class User:
                         print(f"Error loading user {self.public_id}: {e}")
                         time.sleep(5)
 
-    def lmdb_save(self, txn = None):
-        
+    def lmdb_save(self, txn = None):        
         """ """
+
         def save_txn():
             txn.put(b'user:' + self.public_id.encode(), json.dumps(reviews).encode())
 
@@ -168,11 +169,11 @@ class User:
     def get_company_info(self, oid):
         self.load()
         for r in self.reviews():
-            print("qqq")
-            print(type(r))
-            print(r)
             if r.oid == oid:
-                return r._data['object']
+                print_json(data = r._data)
+                if 'object' in r._data:
+                    return r._data['object']
+
 
     def reviews(self):
         self.load()
