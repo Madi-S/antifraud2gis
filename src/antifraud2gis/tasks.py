@@ -73,6 +73,10 @@ def fraud_task(oid: str, force=False):
     except AFReportAlreadyExists:
         logger.warning(f"Worker: Report for {oid!r} already exists")
         return
+    except AFCompanyNotFound:
+        logger.warning(f"Worker: Company not resolved {oid!r}")
+        return
+
     
     
     set_status(f'finished {oid}')
