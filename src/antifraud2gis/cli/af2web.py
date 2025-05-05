@@ -23,7 +23,7 @@ from dramatiq import get_broker
 from rich import print_json
 
 from ..company import Company, CompanyList
-from ..exceptions import AFReportNotReady, AFNoCompany, AFNoTitle
+from ..exceptions import AFReportNotReady, AFNoCompany, AFNoTitle, AFCompanyError
 from ..tasks import submit_fraud_task, get_qsize
 from ..settings import settings
 from ..const import REDIS_TASK_QUEUE_NAME, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_WORKER_STATUS
@@ -115,7 +115,7 @@ async def route_compare(request: Request, oida: str, oidb: str):
 async def report(request: Request, oid: str):
     try:
         c = Company(oid)
-    except (AFNoCompany, AFNoTitle) :
+    except (AFNoCompany, AFNoTitle, AFCompanyError) :
         return RedirectResponse(app.url_path_for("miss", oid=oid))
         # raise HTTPException(status_code=404, detail="Company not found")
 
@@ -170,7 +170,7 @@ async def miss(request: Request, oid: str):
         c = Company(oid)
         assert c.title is not None
 
-    except (AFNoCompany, AFNoTitle, AssertionError) as e:
+    except (AFNoCompany, AFNoTitle, AFCompanyError, AssertionError) as e:
         return render(
             request,
             "nocompany.html", {
