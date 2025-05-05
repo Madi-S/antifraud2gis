@@ -6,7 +6,7 @@ import json
 # from filelock import FileLock, Timeout
 from .fraud import detect
 from .company import CompanyList, Company
-from .exceptions import AFNoCompany, AFReportAlreadyExists
+from .exceptions import AFNoCompany, AFReportAlreadyExists, AFCompanyNotFound
 from .logger import logger
 from .const import REDIS_WORKER_STATUS, REDIS_WORKER_STATUS_SET, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, \
     REDIS_TASK_QUEUE_NAME, REDIS_DRAMATIQ_QUEUE
@@ -53,8 +53,8 @@ def fraud_task(oid: str, force=False):
     
     try:
         c = Company(oid)
-    except AFNoCompany as e:
-        logger.warning(f"Worker: Company {oid!r} not found")
+    except (AFNoCompany, AFCompanyNotFound) as e:
+        logger.warning(f"Worker: Company {oid!r} not found or broken")
         return
     
     cl = CompanyList()
@@ -73,6 +73,7 @@ def fraud_task(oid: str, force=False):
     except AFReportAlreadyExists:
         logger.warning(f"Worker: Report for {oid!r} already exists")
         return
+    
     
     set_status(f'finished {oid}')
     print(f"{os.getpid()} task FINISHED {c}")
