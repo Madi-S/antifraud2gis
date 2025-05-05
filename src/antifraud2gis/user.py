@@ -55,6 +55,10 @@ class User:
         objects = dict()
         reviews = list()
 
+        # print("ZZZ lmdb_load", self.public_id, local_only)
+        # print("".join(traceback.format_stack(limit=10)))
+        
+
         env = lmdb.open(settings.lmdb_storage.as_posix(), map_size=LMDB_MAP_SIZE)
 
         with env.begin() as txn:

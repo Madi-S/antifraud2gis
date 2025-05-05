@@ -230,7 +230,7 @@ class Company:
                 continue
             yield uid
 
-    def load_users(self):
+    def load_users(self, until_resolve=False):
         self.load_reviews()
         # print(f"load users from {len(self._reviews)} reviews")
         with Progress() as progress:
@@ -247,6 +247,14 @@ class Company:
                 # logger.debug(f"Loading user {r['user']['name']} {upid} ({idx+1}/{len(self._reviews)})")
                 user = get_user(upid)
                 user.load()
+                if until_resolve:
+                    try:
+                        title, address = Company.resolve_oid(self.object_id)
+                    except AFCompanyNotFound:
+                        pass
+                    else:
+                        # print("resolved!", title, address)
+                        return
 
     def load_reviews_from_network(self):
         url = f'https://public-api.reviews.2gis.com/2.0/branches/{self.object_id}/reviews?limit=50&fields=meta.providers,meta.branch_rating,meta.branch_reviews_count,meta.total_count,reviews.hiding_reason,reviews.is_verified&without_my_first_review=false&rated=true&sort_by=friends&key={REVIEWS_KEY}&locale=ru_RU'
@@ -414,7 +422,7 @@ class Company:
 
     def update_title_by_reviews(self):
         self.load_reviews()
-        self.load_users()
+        self.load_users(until_resolve=True)
 
         try:
             self.update_title()
