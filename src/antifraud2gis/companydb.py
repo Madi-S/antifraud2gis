@@ -136,7 +136,7 @@ def update_company(company_data: dict, conn = None):
     
     # Extract values from the dictionary and map them to the placeholders
     cursor.execute(sql, (
-        company_data.get("oid"), 
+        company_data.get("oid"),
         company_data.get("title"), 
         company_data.get("address"), 
         company_data.get("town"), 

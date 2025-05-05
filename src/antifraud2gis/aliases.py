@@ -113,7 +113,15 @@ aliases = {
     '70000001017423547': {
         'alias': 'hotdogmaster3'
     },
+    '70000001099184992': {
+        'alias': 'revolution',
+        'remark': 'very few reviews, good for quick tests'
+    },
 
+    '70000001035102877': {
+        'alias': 'dikul',
+        'remark': 'should be error, medical, no back-reviews'
+    },
 
 
 

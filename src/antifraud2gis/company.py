@@ -415,6 +415,14 @@ class Company:
     def update_title_by_reviews(self):
         self.load_reviews()
         self.load_users()
+
+        try:
+            self.update_title()
+        except AFCompanyNotFound:
+            logger.debug(f"Broken company {self.object_id} (no reviews or medical)")
+            self.error = True
+            self.save_basic()
+
         return
 
         for r in self._reviews:

@@ -26,7 +26,7 @@ from ..tasks import submit_fraud_task, cooldown_queue
 from ..logger import loginit, logger, testlogger
 from ..db import db
 from ..const import REDIS_DRAMATIQ_QUEUE
-from ..exceptions import AFNoCompany, AFReportNotReady, AFReportAlreadyExists, AFNoTitle
+from ..exceptions import AFNoCompany, AFReportNotReady, AFReportAlreadyExists, AFNoTitle, AFCompanyError
 from ..settings import settings
 from ..statistics import statistics
 from ..aliases import resolve_alias
@@ -110,7 +110,10 @@ def main():
 
     elif args.cmd == "aliases":
         for oid, alias_rec in aliases.items():
-            print(f"{oid} = {alias_rec['alias']}")
+            remark = alias_rec.get('remark', '')
+            remark = f'({remark})' if remark else ''
+
+            print(f"{oid} = {alias_rec['alias']} {remark}")
 
     elif args.cmd == "compare":
         if len(args.args) != 2:
@@ -173,7 +176,7 @@ def main():
         if args.company and args.cmd not in ['wipe']:
             try:
                 Company(args.company)
-            except (AFNoCompany, AFNoTitle):
+            except (AFNoCompany, AFNoTitle, AFCompanyError):
                 print("No such company (geo or no 2gis reviews)")
                 return
 
