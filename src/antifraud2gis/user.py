@@ -11,6 +11,8 @@ import sys
 import datetime
 import gzip
 import lmdb
+import tempfile
+import os
 
 from .db import db
 from .const import WSS_THRESHOLD, LOAD_NREVIEWS, SLEEPTIME, LMDB_MAP_SIZE
@@ -53,14 +55,14 @@ class User:
         objects = dict()
         reviews = list()
 
-        env = lmdb.open(settings.lmdb_user_storage.as_posix(), map_size=LMDB_MAP_SIZE)
+        env = lmdb.open(settings.lmdb_storage.as_posix(), map_size=LMDB_MAP_SIZE)
 
         with env.begin() as txn:
             val = txn.get(b"user:" + self.public_id.encode())
             if val:
                 self._reviews = json.loads(val)
                 return
-            
+
             # not found in db
             if local_only is False:                
                 loaded = False
@@ -69,7 +71,7 @@ class User:
                         self.load_from_network()
                         loaded = True
                     except Exception as e:
-                        print(f"Error loading user {self.public_id}: {e}")
+                        print(f"Error loading user {self.public_id}: {type(e)} {e}")
                         time.sleep(5)
 
 
@@ -105,10 +107,12 @@ class User:
         """ """
 
         def save_txn():
+            # logger.debug(f'lmdb save user {self.public_id}: {reviews}')
             txn.put(b'user:' + self.public_id.encode(), json.dumps(reviews).encode())
 
             for oid, odata in objects.items():
-                txn.put(b'object:' + oid.encode(), json.dumps(odata).encode())
+                # logger.debug(f'lmdb save object {oid}: {odata}')
+                txn.put(b'object:' + oid.encode(), json.dumps(odata).encode(), overwrite=False)
 
 
         # prepare data structures
@@ -136,7 +140,7 @@ class User:
         if txn:
             save_txn()
         else:
-            env = lmdb.open(settings.lmdb_user_storage.as_posix(), map_size=LMDB_MAP_SIZE)
+            env = lmdb.open(settings.lmdb_storage.as_posix(), map_size=LMDB_MAP_SIZE)
 
             with env.begin(write=True) as txn:
                 save_txn()
@@ -150,8 +154,11 @@ class User:
         if not self._reviews:
             # private profile
             return None
-
-        r = Review(sorted(self._reviews, key=lambda r: r['created'])[0])
+        try:
+            r = Review(sorted(self._reviews, key=lambda r: r['created'])[0])
+        except KeyError:
+            print_json(data=self._reviews)
+            raise
         return r.created
 
     def towns(self):
@@ -196,7 +203,7 @@ class User:
         # why we were called?
         # print("".join(traceback.format_stack(limit=10))) 
 
-        url = f'https://api.auth.2gis.com/public-profile/1.1/user/{self.public_id}/content/feed?page_size=20'        
+        url = f'https://api.auth.2gis.com/public-profile/1.1/user/{self.public_id}/content/feed?page_size=20'
 
         page = 0
 
@@ -265,19 +272,88 @@ class User:
     @property
     def name(self):
         if self._reviews:
-            return self._reviews[0]['user_name']
+
+            try:
+                return self._reviews[0]['user_name']
+            except KeyError:
+                return None
             # return self._reviews[0]['user']['name']
         else:
             return None
 
     @staticmethod
     def users():
-        for file in settings.user_storage.glob('*-reviews.json.gz'):
-            yield User(file.stem.split('-')[0])
+        env = lmdb.open(settings.lmdb_storage.as_posix(), readonly=True, map_size=LMDB_MAP_SIZE, lock=False)
+        prefix = b'user:'
+        key = prefix  # start with first 'user:'
+
+        while True:
+            with env.begin() as txn:  # making lot of very SHORT transactions
+                with txn.cursor() as cur:
+                    if not cur.set_range(key):  
+                        return  # The End
+                    for k, _ in cur:
+                        if not k.startswith(prefix):  # Wrong key. no more users:, the End
+                            return
+                        public_id = k.decode().split(':', 1)[1]  
+                        yield User(public_id)  
+                        key = k + b'\x00'  # will use next key
+                        break 
+
+
+    @staticmethod
+    def old_users_file():
+        env = lmdb.open(settings.lmdb_storage.as_posix(), readonly=True, map_size=LMDB_MAP_SIZE, lock=False)
+        prefix = b'user:'
+
+        with tempfile.NamedTemporaryFile(mode='w+', prefix='af2gis-users-', suffix='.txt', delete=False) as f:
+            tmp_path = f.name
+            print(f"Userlist in {tmp_path}")
+            with env.begin() as txn:
+                with txn.cursor() as cur:
+                    if cur.set_range(prefix):
+                        for key, _ in cur:
+                            if not key.startswith(prefix):
+                                break
+                            public_id = key.decode().split(':', 1)[1]
+                            f.write(public_id + '\n')
+
+        try:
+            with open(tmp_path, 'r') as f:
+                for line in f:
+                    yield User(line.strip())
+        finally:
+            os.remove(tmp_path)
+
+
+    @staticmethod
+    def old_users_iterator():
+        #for file in settings.user_storage.glob('*-reviews.json.gz'):
+        #    yield User(file.stem.split('-')[0])
+        env = lmdb.open(settings.lmdb_storage.as_posix(), readonly=True, map_size=LMDB_MAP_SIZE)
+        with env.begin() as txn:
+            with txn.cursor() as cur:
+                if cur.set_range(b'user:'):
+                    for key, value in cur:
+                        if not key.startswith(b'user:'):
+                            break
+                        public_id = key.decode().split(':')[1]
+                        yield User(public_id)
+
 
     @staticmethod
     def nusers():
-        return sum(1 for _ in settings.user_storage.glob('*-reviews.json.gz'))
+        n = 0
+        env = lmdb.open(settings.lmdb_storage.as_posix(), readonly=True, map_size=LMDB_MAP_SIZE)
+        with env.begin() as txn:
+            with txn.cursor() as cur:
+                if cur.set_range(b'user:'):
+                    for key, value in cur:
+                        if not key.startswith(b'user:'):
+                            break
+                        n+=1
+        return n
+
 
     def __repr__(self):
         return f'User({self.name} (rev: {len(self._reviews) if self._reviews else "not loaded"}) {self.url})'

@@ -17,6 +17,8 @@ REDIS_TASK_QUEUE_NAME="af2gis:queue"
 REDIS_TRUSTED_LIST="af2gis:last_trusted_list"
 REDIS_UNTRUSTED_LIST="af2gis:last_untrusted_list"
 REDIS_WORKER_STATUS="af2gis:worker_status"
+REDIS_WORKER_STATUS_SET="af2gis:worker_status_set"
+REDIS_WORKER_STARTED="af2gis:worker_started"
 REDIS_DRAMATIQ_QUEUE="dramatiq:default"
 
-LMDB_MAP_SIZE = 20*1024**3
+LMDB_MAP_SIZE = 1 << 30

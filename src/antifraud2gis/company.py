@@ -469,7 +469,7 @@ class Company:
     @staticmethod
     def resolve_oid(object_id: str):
         """ set self.title/address from user's reviews """
-        env = lmdb.open(settings.lmdb_user_storage.as_posix(), map_size=LMDB_MAP_SIZE)
+        env = lmdb.open(settings.lmdb_storage.as_posix(), map_size=LMDB_MAP_SIZE, readonly=True)
 
         with env.begin() as txn:
             jdata = txn.get(b"object:" + object_id.encode())
@@ -532,8 +532,6 @@ class CompanyList():
                 continue
 
             yield c
-
-
 
         return
     

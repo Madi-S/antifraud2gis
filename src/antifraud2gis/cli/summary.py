@@ -33,8 +33,6 @@ def printsummary(cl: CompanyList, full=False):
 
     global last_summary
 
-    logger.info(f"SUMMARY request")
-
     userpath = settings.user_storage
     total = len(list(cl.companies()))    
     nerr = 0
@@ -51,7 +49,7 @@ def printsummary(cl: CompanyList, full=False):
 
     logger.info(f"SUMMARY Companies: {total=}, {nerr=} {ncalc=} {nncalc=}")
     
-    env = lmdb.open(settings.lmdb_user_storage.as_posix(), readonly=True)
+    env = lmdb.open(settings.lmdb_storage.as_posix(), readonly=True, map_size=LMDB_MAP_SIZE)
     prefixes = defaultdict(int)
     with env.begin() as txn:
         with txn.cursor() as cur:

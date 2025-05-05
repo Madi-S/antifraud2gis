@@ -26,8 +26,9 @@ from ..exceptions import AFNoCompany, AFNoTitle, AFCompanyError
 from ..aliases import aliases
 from .summary import printsummary
 from ..tasks import submit_fraud_task, cooldown_queue
-from ..const import REDIS_TASK_QUEUE_NAME, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_WORKER_STATUS, REDIS_DRAMATIQ_QUEUE, REVIEWS_KEY, \
-                        LMDB_MAP_SIZE
+from ..const import REDIS_TASK_QUEUE_NAME, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_WORKER_STATUS, REDIS_WORKER_STATUS_SET, \
+                        REDIS_DRAMATIQ_QUEUE, REVIEWS_KEY, \
+                        LMDB_MAP_SIZE, REDIS_WORKER_STARTED
 from ..logger import logger
 from ..session import session
 from ..utils import random_company
@@ -271,25 +272,28 @@ def do_provider(args, cl: CompanyList):
 def lmdb_dump(args):
 
     try:
-        lmdb_path = args.args[0]
+        needle = args.args[0]
     except IndexError:
-        lmdb_path = settings.lmdb_user_storage.as_posix()
+        needle = None
+        
+    lmdb_path = settings.lmdb_storage.as_posix()
 
     print("Dump", lmdb_path)
 
-    env = lmdb.open(lmdb_path, readonly=True)
+    env = lmdb.open(lmdb_path, readonly=True, map_size=LMDB_MAP_SIZE)
     with env.begin() as txn:
         with txn.cursor() as cur:
             for key, val in cur:
                 if key.startswith(b'object:'):
                     data = json.loads(val.decode())
-                    print(key.decode())
-                    print_json(data=data)
+                    if needle is None or needle.lower() in data['name']:
+                        print(key.decode())
+                        print_json(data=data)
                 elif key.startswith(b'user:'):
-                    # set data based on gzipped json in val
-                    data = json.loads(val.decode())
-                    print(key.decode())
-                    print_json(data=data)
+                        if not needle:
+                            data = json.loads(val.decode())
+                            print(key.decode())
+                            print_json(data=data)
                 else:
                     print(key.decode(), val[:100])
 
@@ -307,7 +311,7 @@ def get_args():
 
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("cmd", choices=['company-users', 'user-reviews', 'company-reviews', 'queue', 'explore', 'provider', 'sys', 'filldb', 'dev', 'lmdb', 'convert', 'delkeys'])
+    parser.add_argument("cmd", choices=['company-users', 'users', 'user-reviews', 'company-reviews', 'queue', 'explore', 'provider', 'sys', 'filldb', 'dev', 'lmdb', 'convert', 'delkeys'])
     parser.add_argument("-v", "--verbose", default=False, action='store_true')
     parser.add_argument("--full", default=False, action='store_true')
     parser.add_argument("args", nargs='*', help='extra args')
@@ -354,6 +358,10 @@ def main():
         for r in c.reviews():
             print(r)
 
+    elif cmd == "users":
+        for u in User.users():
+            print(u)
+
     elif cmd == "queue":
         r = redis.Redis(decode_responses=True)
 
@@ -367,6 +375,19 @@ def main():
                 r.delete(key)            
 
         wstatus = r.get(REDIS_WORKER_STATUS)
+        wstatus_set = r.get(REDIS_WORKER_STATUS_SET)
+        if wstatus_set:         
+            wstatus_age = int( time.time() - float(wstatus_set))
+        else:
+            wstatus_age = None
+            
+        wstarted = r.get(REDIS_WORKER_STARTED)
+
+        if wstarted:
+            wuptime = int(time.time() - float(wstarted))
+        else:
+            wuptime = None
+        
         tasks = r.lrange(REDIS_TASK_QUEUE_NAME, 0, -1)  # возвращает list of bytes    
         trusted_len = r.llen(REDIS_TRUSTED_LIST)
         untrusted_len = r.llen(REDIS_UNTRUSTED_LIST)
@@ -378,9 +399,12 @@ def main():
         lastn = 5
 
         print("Queue report")
-        print(f"Worker status: {wstatus}")
+        print(f"Worker status: {wstatus} ({wstatus_age} sec ago)")
+        print(f"Worker uptime: {wuptime} sec.")
         print(f"Dramatiq queue: {dqlen}")
-        print(f"Tasks ({len(tasks)}): {tasks[:5]} ")
+        tasks_suffix = '...' if len(tasks) > lastn else ''
+            
+        print(f"Tasks ({len(tasks)}): {' '.join(tasks[:lastn])} {tasks_suffix}")
         print(f"Trusted ({lastn}/{trusted_len}):")
         for c in last_trusted[:lastn]:
             # print_json(data=c)
@@ -500,6 +524,8 @@ def main():
                     logger.info("Stopfile found, exit")
                     stopfile.unlink()
                     return
+        else:
+            print(f"Finished. Last used: {idx} submitted: {submitted}")
 
     elif cmd == "dev":
         return
@@ -548,7 +574,7 @@ def main():
 
     elif cmd == "convert":
         nusers = User.nusers()
-        env = lmdb.open(settings.lmdb_user_storage.as_posix(), map_size=LMDB_MAP_SIZE)
+        env = lmdb.open(settings.lmdb_storage.as_posix(), map_size=LMDB_MAP_SIZE)
         
         with env.begin(write=True) as txn:
             for idx, u in enumerate(User.users()):

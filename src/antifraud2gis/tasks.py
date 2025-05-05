@@ -8,7 +8,8 @@ from .fraud import detect
 from .company import CompanyList, Company
 from .exceptions import AFNoCompany, AFReportAlreadyExists
 from .logger import logger
-from .const import REDIS_WORKER_STATUS, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, REDIS_TASK_QUEUE_NAME, REDIS_DRAMATIQ_QUEUE
+from .const import REDIS_WORKER_STATUS, REDIS_WORKER_STATUS_SET, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_LIST, \
+    REDIS_TASK_QUEUE_NAME, REDIS_DRAMATIQ_QUEUE
 from .user import reset_user_pool
 from .statistics import statistics
 
@@ -20,7 +21,7 @@ r = redis.Redis(
     decode_responses=True
 )
 
-r.set(REDIS_WORKER_STATUS, f'started...')
+# r.set(REDIS_WORKER_STATUS, f'worker started as pid {os.getpid()}')
 
 started = time.time()
 processed = 0
@@ -29,8 +30,16 @@ def get_qsize():
     return r.llen(REDIS_DRAMATIQ_QUEUE)    
 
 def cooldown_queue(maxq: int):
-    while get_qsize() > maxq:
+    printed = False
+    while get_qsize() >= maxq:
+        if not printed:
+            logger.debug(f"Queue size {get_qsize()} > {maxq}, waiting to cooldown...")
+            printed = True
         time.sleep(10)
+
+def set_status(status: str):
+    r.set(REDIS_WORKER_STATUS, status)
+    r.set(REDIS_WORKER_STATUS_SET, str(int(time.time())))
 
 @dramatiq.actor
 def fraud_task(oid: str, force=False):
@@ -55,7 +64,7 @@ def fraud_task(oid: str, force=False):
         return
 
     print(f"{os.getpid()} task STARTED {c}")
-    r.set(REDIS_WORKER_STATUS, oid)
+    set_status(oid)
     try:
         score = detect(c, cl, force=force)
     except AFNoCompany:
@@ -65,7 +74,7 @@ def fraud_task(oid: str, force=False):
         logger.warning(f"Worker: Report for {oid!r} already exists")
         return
     
-    r.set(REDIS_WORKER_STATUS, f'finished {oid}')
+    set_status(f'finished {oid}')
     print(f"{os.getpid()} task FINISHED {c}")
     print("SCORE:", score)
 

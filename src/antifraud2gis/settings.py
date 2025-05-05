@@ -1,13 +1,15 @@
 from pathlib import Path
 import os
+import lmdb
 from dotenv import load_dotenv
+from .const import LMDB_MAP_SIZE
 
 class Settings():
     def __init__(self):
         load_dotenv()
         self.storage = Path("~/.af2gis-storage").expanduser()
         self.user_storage = self.storage / "users"
-        self.lmdb_user_storage = self.storage / "users.lmdb"
+        self.lmdb_storage = self.storage / "users.lmdb"
 
         self.private_user_storage = self.storage / "users" / "_private.json"
         self.company_storage = self.storage / "companies"
@@ -81,7 +83,14 @@ class Settings():
             self.user_storage.mkdir(parents=True)
         if not self.company_storage.exists():
             self.company_storage.mkdir(parents=True)
-            
+
+        if not self.lmdb_storage.exists():
+            env = lmdb.open(self.lmdb_storage.as_posix(), map_size=LMDB_MAP_SIZE)
+            with env.begin(write=True):
+                pass  
+            env.close()
+
+
     def param_fp(self):
         return f"risk_hit={self.risk_hit_th} risk_median_th={self.risk_median_th} risk_highrate_th={self.risk_highrate_th} " \
             f"empty_user={self.empty_user} " \
