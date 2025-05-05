@@ -21,4 +21,4 @@ REDIS_WORKER_STATUS_SET="af2gis:worker_status_set"
 REDIS_WORKER_STARTED="af2gis:worker_started"
 REDIS_DRAMATIQ_QUEUE="dramatiq:default"
 
-LMDB_MAP_SIZE = 1 << 30
+LMDB_MAP_SIZE = 1 << 35
