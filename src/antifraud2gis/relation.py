@@ -5,11 +5,12 @@ from .logger import logger
 from .review import Review
 import os
 import numpy as np
+from collections import defaultdict
 
 from rich.console import Console
 from rich.table import Table
 from rich.text import Text
-from rich import print as rprint
+from rich import print as rprint, print_json
 
 #risk_hit_th = int(os.getenv('RISK_HIT_TH', '10'))
 #risk_median_th = int(os.getenv('RISK_MEDIAN_TH', '15'))
@@ -18,19 +19,6 @@ from rich import print as rprint
 # print(settings.risk_hit_th, settings.risk_median_th, settings.show_hit_th)
 
 users_added = 0
-
-
-def _is_dangerous(avg_arating, avg_brating, count, median, debug=False):
-    # high-rate check
-    if avg_arating >= settings.risk_highrate_th and avg_brating >= settings.risk_highrate_th:
-        #if count >= settings.risk_highrate_hit_th and median <= settings.risk_highrate_median_th:
-        #    return True
-        # default check
-        if count >= settings.risk_hit_th: # and median <= settings.risk_median_th:           
-            return True
-    
-    return False
-        
 
 
 class Relation:
@@ -187,7 +175,7 @@ class Relation:
 class RelationDict:
 
     c: Company
-    relations: dict[Relation]
+    relations: dict[str, Relation]
 
     meanmedian: float
     doublemedian: float
@@ -264,6 +252,19 @@ class RelationDict:
         filtered = (rel for rel in self.relations.values() if rel.is_dangerous())  # Filter dangerous items
         sorted_items = sorted(filtered, key=lambda x: getattr(x, field), reverse=True)  # Sort descending
         yield from sorted_items
+
+    def get_towns(self, risk=None):
+        towns = defaultdict(int)
+
+        for rel in self.relations.values():
+            if risk:
+                # maybe skip
+                if not rel.is_risk():
+                    continue
+            towns[rel.get_btown()] += 1 # rel.count
+        return towns
+
+
 
 
     def dump_table(self):

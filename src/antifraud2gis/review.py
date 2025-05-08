@@ -2,6 +2,9 @@ import datetime
 from rich import print_json
 
 class Review():
+
+    _user: 'User'
+
     def __init__(self, data, user=None, company=None):
         # data is either from our local db or from 2gis company
         from .company import Company
@@ -52,7 +55,7 @@ class Review():
         return self.created.strftime("%Y-%m-%d")
 
     @property    
-    def user(self):
+    def user(self) -> 'User': 
         if not self._user:
             from .user import User, get_user
             user = get_user(self.uid)

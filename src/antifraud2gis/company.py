@@ -268,7 +268,7 @@ class Company:
             r = None
             while r is None:
 
-                try:
+                try:                    
                     r = session.get(url)
                 except RequestException as e:
                     print("RequestException", e)

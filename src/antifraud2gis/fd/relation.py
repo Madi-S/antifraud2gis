@@ -1,4 +1,5 @@
 from collections import Counter
+from rich import print_json
 import numpy as np
 
 
@@ -35,12 +36,14 @@ class RelationFD(BaseFD):
         self.processed_users = 0
         self.risk_users = dict()
 
+
     def feed(self, cr: Review, empty: bool = False):
 
         if empty:
             return
 
-        u = cr.user
+
+        u: User = cr.user
         for r in u.reviews():
 
             if r.oid == self._c.object_id:
@@ -64,6 +67,14 @@ class RelationFD(BaseFD):
         self.happy_hirel = 0
         self.hirel = 0
 
+        towncount = self._c.relations.get_towns(risk=True)
+
+        if towncount:
+            top_town = max(towncount, key=towncount.get)
+            top_towns_rels = towncount[top_town]
+            # long_rels: count of risk (happy/high) relations WITHOUT top_town relations
+            long_rels = sum(towncount.values()) - top_towns_rels
+
         for rel in self._c.relations.relations.values():
             if rel.check_high_hits():
                 self.hirel += 1
@@ -79,14 +90,15 @@ class RelationFD(BaseFD):
                         self.risk_users[u.public_id].append(rel.b)
 
         self.score['happy_ratio'] = int(100*self.happy_hirel/self.hirel) if self.hirel > 0 else 0
-        self.score['happy_long_rel'] = int(100*len(self.towns)/self.happy_hirel) if self.happy_hirel > 0 else 0
+        self.score['happy_long_rel'] = int((100*long_rels)/self.happy_hirel) if self.happy_hirel > 0 else 0
+
         self.score['sametitle_rel'] = int(100*len(self.titles)/self.happy_hirel) if self.happy_hirel > 0 else 0
         self.score['risk_users'] = int(100*len(self.risk_users) / self.processed_users)
 
         if len(self.towns) >= settings.happy_long_rel_min_towns \
                 and self.score['happy_ratio'] >= settings.happy_long_rel_happy_ratio \
                 and self.score['happy_long_rel'] >= settings.happy_long_rel:
-            self.score['detections'].append(f"happy_long_rel {self.score['happy_long_rel']}% ({len(self.towns)} of {self.happy_hirel})")
+            self.score['detections'].append(f"happy_long_rel {self.score['happy_long_rel']}% ({long_rels} / {self.happy_hirel})")
 
         if self.happy_hirel >= settings.sametitle_rel and self.score['sametitle_rel'] <= settings.sametitle_ratio:
             self.score['detections'].append(f"sametitle_rel {self.score['sametitle_rel']}% ({self.happy_hirel} of {len(self.titles)})")

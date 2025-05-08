@@ -190,6 +190,8 @@ class User:
         self.load()
         # reviews are sorted by date_edited desc, not by date_created, we need to re-sort
         for r in sorted(self._reviews, key=lambda r: r['created']):
+            if r['oid'] in settings.skip_oids:
+                continue
             yield Review(r, user=self)
 
     def review_for(self, oid: str) -> Review:

@@ -18,7 +18,7 @@ from .logger import logger
 from .company import Company, CompanyList
 from .companydb import update_company, get_by_oid, check_by_oid
 from .user import User, get_user
-from .relation import RelationDict, _is_dangerous
+from .relation import RelationDict
 from .settings import settings
 from .exceptions import AFReportNotReady, AFNoCompany, AFReportAlreadyExists
 # from .usernotes import Usernotes

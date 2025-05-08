@@ -7,6 +7,10 @@ from .const import LMDB_MAP_SIZE
 class Settings():
     def __init__(self):
         load_dotenv()
+
+        # algorithm version
+        self.algo = 1
+
         self.storage = Path("~/.af2gis-storage").expanduser()
         self.user_storage = self.storage / "users"
         self.lmdb_storage = self.storage / "db.lmdb"
@@ -23,22 +27,22 @@ class Settings():
 
 
         # Relations-specific
-        self.risk_hit_th = int(os.getenv('RISK_HIT_TH', '10'))
-        self.sametitle_rel = int(os.getenv('SAMETITLE_HIT', '3'))
+        self.risk_hit_th = int(os.getenv('RISK_HIT', '10'))
+        self.sametitle_rel = int(os.getenv('SAMETITLE_REL', '3'))
         self.sametitle_ratio = int(os.getenv('SAMETITLE_RATIO', '50'))
 
-        self.happy_long_rel_happy_ratio = int(os.getenv('HAPPY_LONG_REL_HAPPY_RATIO', '50'))
+        self.happy_long_rel_happy_ratio = int(os.getenv('HAPPY_LONG_REL', '50'))
         self.happy_long_rel = int(os.getenv('HAPPY_LONG_REL', '10'))
         self.happy_long_rel_min_towns = int(os.getenv('HAPPY_LONG_REL_MIN_TOWNS', '3'))
 
         # median rpu for relations/printing
         self.risk_median_th = int(os.getenv('RISK_MEDIAN_TH', '15'))
-        self.show_hit_th = int(os.getenv('SHOW_HIT_TH', '1000'))
+        self.show_hit_th = int(os.getenv('SHOW_HIT', '1000'))
 
 
 
         # for relations and median age
-        self.risk_highrate_th = float(os.getenv('RISK_HIGHRATE_TH', '4.9'))
+        self.risk_highrate_th = float(os.getenv('RISK_HIGHRATE', '4.9'))
         # self.risk_highrate_hit_th = float(os.getenv('RISK_HIGHRATE_HIT_TH', '5'))
         # self.risk_highrate_median_th = float(os.getenv('RISK_HIGHRATE_MEDIAN_TH', '15'))
 
@@ -92,7 +96,7 @@ class Settings():
 
 
     def param_fp(self):
-        return f"risk_hit={self.risk_hit_th} risk_median_th={self.risk_median_th} risk_highrate_th={self.risk_highrate_th} " \
+        return f"algo={self.algo} risk_hit={self.risk_hit_th} risk_median_th={self.risk_median_th} risk_highrate_th={self.risk_highrate_th} " \
             f"empty_user={self.empty_user} " \
             f"risk_user_ratio={self.risk_user_ratio} " \
             f"happy_long_rel_th={self.happy_long_rel} happy_long_rel_happy_ratio={self.happy_long_rel_happy_ratio} " \
