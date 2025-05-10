@@ -31,6 +31,7 @@ af2gis fraud nskzoo
 af2gis aliases
 ~~~
 
+Next call to fraud detection will show old result unless `--overwrite` option given.
 
 ### Explore town (crawl, index new companies)
 You need to have at least few users already crawled (from previous fraud detections).
@@ -100,3 +101,64 @@ object:70000001017423547
 }
 ...
 ~~~
+
+## Adjust settings
+
+Settings variables can be overriden in environment or .env file.
+
+You can always see accurate current defaults in [settings.py](src/antifraud2gis/settings.py).
+
+### Common settings
+
+If company has less then `MIN_REVIEWS` (20) it will be considered trusted without any other checks.
+
+Only reviews with age under `MAX_REVIEW_AGE` (730 days) are processed.
+
+`SKIP_OIDS` and `DEBUG_UIDS` are space-separated list of UID/OIDs to ignore/debug. (only for debugging purposes, not for users).
+
+### Relation-specific
+
+Definition: 
+Relation between companies A and B is *high* if it has many hits (>= `RISH_HIT`).
+Relation is *happy* if avg rating for both A/B companies in relation are >= `RISK_HIGHRATE`
+
+For *sametitle* check: check applied only if company has more then `SAMETITLE_REL` (3) 'happy' relations, and total different titles in relations ( / total happy relations) are under `SAMETITLE_RATIO` (percents). 
+
+For *happy long relations* check: check applied if number of towns are >= `HAPPY_LONG_REL_MIN_TOWNS` (3) and *happy ratio* (ratio of happy hight relations to all high relations) is over `HAPPY_LONG_REL` (50%). *happy_long_rel* calculated as unique_towns / happy_high_relations. (If each happy high relation belongs to different town, *happy_long_rel* will be 1). Detection will be if this value is >= then `HAPPY_LONG_REL` (10).
+
+
+        self.happy_long_rel_happy_ratio = int(os.getenv('HAPPY_LONG_REL_HAPPY_RATIO', '50'))
+        self.happy_long_rel = int(os.getenv('HAPPY_LONG_REL', '10'))
+        self.happy_long_rel_min_towns = int(os.getenv('HAPPY_LONG_REL_MIN_TOWNS', '3'))
+
+        # median rpu for relations/printing
+        self.risk_median_th = int(os.getenv('RISK_MEDIAN_TH', '15'))
+        self.show_hit_th = int(os.getenv('SHOW_HIT_TH', '1000'))
+
+
+
+        # for relations and median age
+        # self.risk_highrate_hit_th = float(os.getenv('RISK_HIGHRATE_HIT_TH', '5'))
+        # self.risk_highrate_median_th = float(os.getenv('RISK_HIGHRATE_MEDIAN_TH', '15'))
+
+        self.risk_user_ratio = float(os.getenv('RISK_USER_TH', '30'))
+
+
+        # untrusted if EMPTY_USER% (and their rating differs)
+        self.empty_user = float(os.getenv('EMPTY_USER', '75'))
+        
+        # do not run empty-user if less then N users available empty/real
+        self.apply_empty_user_min = int(os.getenv('APPLY_EMPTY_USER', '20'))
+        self.apply_median_rpu = int(os.getenv('APPLY_MEDIAN_RPU', '20'))
+        self.apply_median_userage = int(os.getenv('APPLY_MEDIAN_UA', '20'))
+
+        self.rating_diff = float(os.getenv('RATING_DIFF', '1.2'))
+
+        self.median_rpu = float(os.getenv('MEDIAN_RPU', '5'))
+        
+        # 2 year old maximum 365
+        self.max_review_age = int(os.getenv('MAX_REVIEW_AGE', '730'))
+
+        self.median_user_age = int(os.getenv('MEDIAN_USER_AGE', '30'))
+        self.median_user_age_nusers = int(os.getenv('MEDIAN_USER_AGE_NUSERS', '10'))
+

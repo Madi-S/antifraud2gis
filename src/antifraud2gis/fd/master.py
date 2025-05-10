@@ -60,6 +60,10 @@ class MasterFD(BaseFD):
 
         self.providers[cr.provider] += 1
 
+        if cr.is_empty():
+            print("zzzz empty")
+
+
         if cr.is_empty() or cr.user.public_id in self._users:
             if cr.uid is not None and cr.user.public_id in self._users:
                 # print(f"User {cr.user.public_id} {cr.created} {cr.provider} already processed DUPLICATE !!!")

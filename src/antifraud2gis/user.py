@@ -58,7 +58,6 @@ class User:
         # print("ZZZ lmdb_load", self.public_id, local_only)
         # print("".join(traceback.format_stack(limit=10)))
         
-
         env = lmdb.open(settings.lmdb_storage.as_posix(), map_size=LMDB_MAP_SIZE)
 
         with env.begin() as txn:
@@ -107,12 +106,12 @@ class User:
                         print(f"Error loading user {self.public_id}: {e}")
                         time.sleep(5)
 
-    def lmdb_save(self, txn = None):        
+    def lmdb_save(self, reviews: list, txn = None):        
         """ """
 
         def save_txn():
             # logger.debug(f'lmdb save user {self.public_id}: {reviews}')
-            txn.put(b'user:' + self.public_id.encode(), json.dumps(reviews).encode())
+            txn.put(b'user:' + self.public_id.encode(), json.dumps(data_reviews).encode())
 
             for oid, odata in objects.items():
                 # logger.debug(f'lmdb save object {oid}: {odata}')
@@ -121,9 +120,9 @@ class User:
 
         # prepare data structures
         objects = dict()
-        reviews = list()
+        data_reviews = list()
 
-        for r in self._reviews:
+        for r in reviews:
             # update objects
             objects[r['object']['id']] = {
                 'name': r['object']['name'],
@@ -132,7 +131,7 @@ class User:
 
             created = datetime.datetime.strptime(r['date_created'].split('T')[0], "%Y-%m-%d")
 
-            reviews.append({
+            data_reviews.append({
                 'rating': r['rating'],
                 'oid': r['object']['id'],
                 'uid':  r['user']['public_id'],
@@ -200,6 +199,7 @@ class User:
                 return r
 
     def load_from_network(self):
+
         if db.is_private_profile(self.public_id):
             # logger.debug("skip: private profile from shelf", self.public_id)
             return
@@ -212,6 +212,8 @@ class User:
         url = f'https://api.auth.2gis.com/public-profile/1.1/user/{self.public_id}/content/feed?page_size=20'
 
         page = 0
+
+        _reviews = list()
 
         while True:
             # logger.debug(f"Loading page {page} for user {self}")
@@ -234,7 +236,7 @@ class User:
                     review = el['review']
                 except KeyError:
                     continue
-                self._reviews.append(review)
+                _reviews.append(review)
 
 
             # self.reviews.extend(data['reviews'])
@@ -263,11 +265,13 @@ class User:
         #with gzip.open(self.reviews_path, 'wt') as f:
         #    json.dump(self._reviews, f)
         try:
-            self.lmdb_save()
+            self.lmdb_save(reviews=_reviews)
         except Exception as e:
             print(f"Error saving user {self.public_id}: {e}")            
             sys.exit(1)
 
+        # now we can load from database
+        self.load()
         statistics.total_users_loaded_network += 1
         statistics.total_users_loaded += 1
 

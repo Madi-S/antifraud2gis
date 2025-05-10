@@ -281,21 +281,36 @@ def lmdb_dump(args):
     print("Dump", lmdb_path)
 
     env = lmdb.open(lmdb_path, readonly=True, map_size=LMDB_MAP_SIZE)
-    with env.begin() as txn:
-        with txn.cursor() as cur:
-            for key, val in cur:
-                if key.startswith(b'object:'):
+
+    if needle is None:
+        # dump everything
+        with env.begin() as txn:
+            with txn.cursor() as cur:
+                for key, val in cur:
                     data = json.loads(val.decode())
-                    if needle is None or needle.lower() in data['name']:
+                    print(key.decode())
+                    print_json(data=data)
+
+    elif needle.startswith('user:') or needle.startswith('objects:'):
+        # dump specific key
+        with env.begin() as txn:
+            with txn.cursor() as cur:
+                for key, val in cur:
+                    if key.decode() == needle:
+                        data = json.loads(val.decode())
                         print(key.decode())
                         print_json(data=data)
-                elif key.startswith(b'user:'):
-                        if not needle:
-                            data = json.loads(val.decode())
+
+    else:
+        # dump company by name
+        with env.begin() as txn:
+            with txn.cursor() as cur:
+                for key, val in cur:
+                    if key.startswith(b'object:'):
+                        data = json.loads(val.decode())
+                        if needle is None or needle.lower() in data['name']:
                             print(key.decode())
                             print_json(data=data)
-                else:
-                    print(key.decode(), val[:100])
 
 
 def get_args():
@@ -311,7 +326,7 @@ def get_args():
 
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("cmd", choices=['company-users', 'users', 'user-reviews', 'company-reviews', 'queue', 'explore', 'provider', 'sys', 'filldb', 'dev', 'lmdb', 'convert', 'delkeys'])
+    parser.add_argument("cmd", choices=['company-users', 'users', 'user-reviews', 'company-reviews', 'queue', 'explore', 'provider', 'sys', 'filldb', 'dev', 'lmdb', 'convert', 'delkeys', 'lmdbrm'])
     parser.add_argument("-v", "--verbose", default=False, action='store_true')
     parser.add_argument("--full", default=False, action='store_true')
     parser.add_argument("args", nargs='*', help='extra args')
@@ -347,6 +362,7 @@ def main():
 
     elif cmd == "user-reviews":
         u = User(args.args[0])
+        print(u)
         for r in u.reviews():
             print(r)
 
@@ -357,6 +373,14 @@ def main():
         c.load_reviews()
         for r in c.reviews():
             print(r)
+
+    elif cmd == "lmdbrm":
+        key = args.args[0].encode()
+        env = lmdb.open(settings.lmdb_storage.as_posix(), map_size=LMDB_MAP_SIZE)
+        with env.begin(write=True) as txn:
+            deleted = txn.delete(key)
+            print(f"Deleted ({deleted}) {key}")
+
 
     elif cmd == "users":
         for u in User.users():
