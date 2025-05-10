@@ -112,53 +112,40 @@ You can always see accurate current defaults in [settings.py](src/antifraud2gis/
 
 If company has less then `MIN_REVIEWS` (20) it will be considered trusted without any other checks.
 
-Only reviews with age under `MAX_REVIEW_AGE` (730 days) are processed.
+Only reviews with age under `MAX_REVIEW_AGE` (730 days) are processed. (Older reviews are counted as `discarded`)
 
 `SKIP_OIDS` and `DEBUG_UIDS` are space-separated list of UID/OIDs to ignore/debug. (only for debugging purposes, not for users).
 
 ### Relation-specific
 
 Definition: 
-Relation between companies A and B is *high* if it has many hits (>= `RISH_HIT`).
+Relation between companies A and B is *high* if it has many hits (>= `RISK_HIT`).
 Relation is *happy* if avg rating for both A/B companies in relation are >= `RISK_HIGHRATE`
 
 For *sametitle* check: check applied only if company has more then `SAMETITLE_REL` (3) 'happy' relations, and total different titles in relations ( / total happy relations) are under `SAMETITLE_RATIO` (percents). 
 
 For *happy long relations* check: check applied if number of towns are >= `HAPPY_LONG_REL_MIN_TOWNS` (3) and *happy ratio* (ratio of happy hight relations to all high relations) is over `HAPPY_LONG_REL` (50%). *happy_long_rel* calculated as unique_towns / happy_high_relations. (If each happy high relation belongs to different town, *happy_long_rel* will be 1). Detection will be if this value is >= then `HAPPY_LONG_REL` (10).
 
+Risk users are users in such risk (high and happy) relations. If ratio of risk users are over `RISK_USER` (30), detection happens.
 
-        self.happy_long_rel_happy_ratio = int(os.getenv('HAPPY_LONG_REL_HAPPY_RATIO', '50'))
-        self.happy_long_rel = int(os.getenv('HAPPY_LONG_REL', '10'))
-        self.happy_long_rel_min_towns = int(os.getenv('HAPPY_LONG_REL_MIN_TOWNS', '3'))
+### Empty users
 
-        # median rpu for relations/printing
-        self.risk_median_th = int(os.getenv('RISK_MEDIAN_TH', '15'))
-        self.show_hit_th = int(os.getenv('SHOW_HIT_TH', '1000'))
+User is *empty* if it has no visible reviews (user is external or has private profile) or user have just one review for this company only.
+
+Test applied only if company has more then `APPLY_EMPTY_USER` reviews from empty users and from non-empty users. Fraud detected if company has more then `EMPTY_USER` (75%) empty users and avg rating about empty users are more then `RATING_DIFF` (1.2) higher then rating among non-empty users.
+
+### Reviews per user
+Simple/cheap bots often have very few reviews. Check is applied only if processed (= from not empty users) more then `APPLY_MEDIAN_RPU` (20) reviews. Detection happens if median number of reviews per user is lower then `MEDIAN_RPU` (5) and rating amount low-RPU users and high-RPU users are over `RATING_DIFF`.
+
+### User age
+*User age* is age in days between a first review of user and a current review. (so, each user has at least one review with user age = 0). Check is applied only if processed more then `APPLY_MEDIAN_UA` (20) reviews, if median user age is under `MEDIAN_USER_AGE` (30) days, there is at least `MEDIAN_USER_AGE_NUSERS` (10) *young* users and rating among young users are more then `RATING_DIFF` if compare with *old* users.
+
+### Displaying results
+Console utility shows all high relations between companies, `SHOW_HIT` used to display relations with lower hit count. Can be overriden with `-s N` option. 
+
+`RISK_MEDIAN` will highlight median number of user reviews if it's under this value. (Bots often has low number of reviews).
+
+Neither `SHOW_HIT` nor `RISK_MEDIAN` do not affect detections, it's used only for displaying information.
 
 
-
-        # for relations and median age
-        # self.risk_highrate_hit_th = float(os.getenv('RISK_HIGHRATE_HIT_TH', '5'))
-        # self.risk_highrate_median_th = float(os.getenv('RISK_HIGHRATE_MEDIAN_TH', '15'))
-
-        self.risk_user_ratio = float(os.getenv('RISK_USER_TH', '30'))
-
-
-        # untrusted if EMPTY_USER% (and their rating differs)
-        self.empty_user = float(os.getenv('EMPTY_USER', '75'))
-        
-        # do not run empty-user if less then N users available empty/real
-        self.apply_empty_user_min = int(os.getenv('APPLY_EMPTY_USER', '20'))
-        self.apply_median_rpu = int(os.getenv('APPLY_MEDIAN_RPU', '20'))
-        self.apply_median_userage = int(os.getenv('APPLY_MEDIAN_UA', '20'))
-
-        self.rating_diff = float(os.getenv('RATING_DIFF', '1.2'))
-
-        self.median_rpu = float(os.getenv('MEDIAN_RPU', '5'))
-        
-        # 2 year old maximum 365
-        self.max_review_age = int(os.getenv('MAX_REVIEW_AGE', '730'))
-
-        self.median_user_age = int(os.getenv('MEDIAN_USER_AGE', '30'))
-        self.median_user_age_nusers = int(os.getenv('MEDIAN_USER_AGE_NUSERS', '10'))
 

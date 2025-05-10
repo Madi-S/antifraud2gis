@@ -36,7 +36,7 @@ class MasterFD(BaseFD):
         self.score['total_reviews'] = 0
         self.score['processed_reviews'] = 0
         self.score['empty_reviews'] = 0
-        self.score['discarded'] = 0
+        self.score['expired'] = 0
 
         self._detectors = {
             'empty_user': EmptyUserFD(c, explain=explain),
@@ -55,14 +55,10 @@ class MasterFD(BaseFD):
         empty = False
 
         if cr.age > settings.max_review_age:
-            self.score['discarded'] += 1
+            self.score['expired'] += 1
             return
 
         self.providers[cr.provider] += 1
-
-        if cr.is_empty():
-            print("zzzz empty")
-
 
         if cr.is_empty() or cr.user.public_id in self._users:
             if cr.uid is not None and cr.user.public_id in self._users:

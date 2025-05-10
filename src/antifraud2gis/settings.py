@@ -36,17 +36,14 @@ class Settings():
         self.happy_long_rel_min_towns = int(os.getenv('HAPPY_LONG_REL_MIN_TOWNS', '3'))
 
         # median rpu for relations/printing
-        self.risk_median_th = int(os.getenv('RISK_MEDIAN_TH', '15'))
+        self.risk_median_th = int(os.getenv('RISK_MEDIAN', '15'))
         self.show_hit_th = int(os.getenv('SHOW_HIT', '1000'))
 
 
 
         # for relations and median age
         self.risk_highrate_th = float(os.getenv('RISK_HIGHRATE', '4.9'))
-        # self.risk_highrate_hit_th = float(os.getenv('RISK_HIGHRATE_HIT_TH', '5'))
-        # self.risk_highrate_median_th = float(os.getenv('RISK_HIGHRATE_MEDIAN_TH', '15'))
-
-        self.risk_user_ratio = float(os.getenv('RISK_USER_TH', '30'))
+        self.risk_user_ratio = float(os.getenv('RISK_USER', '30'))
 
 
         # untrusted if EMPTY_USER% (and their rating differs)
@@ -54,6 +51,7 @@ class Settings():
         
         # do not run empty-user if less then N users available empty/real
         self.apply_empty_user_min = int(os.getenv('APPLY_EMPTY_USER', '20'))
+
         self.apply_median_rpu = int(os.getenv('APPLY_MEDIAN_RPU', '20'))
         self.apply_median_userage = int(os.getenv('APPLY_MEDIAN_UA', '20'))
 
