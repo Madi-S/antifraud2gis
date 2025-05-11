@@ -130,7 +130,7 @@ Risk users are users in such risk (high and happy) relations. If ratio of risk u
 
 ### Empty users
 
-User is *empty* if it has no visible reviews (user is external or has private profile) or user have just one review for this company only.
+User is *empty* if it has no visible reviews for other companies (user is external or has private profile) or user have just one review for this company only.
 
 Test applied only if company has more then `APPLY_EMPTY_USER` reviews from empty users and from non-empty users. Fraud detected if company has more then `EMPTY_USER` (75%) empty users and avg rating about empty users are more then `RATING_DIFF` (1.2) higher then rating among non-empty users.
 
