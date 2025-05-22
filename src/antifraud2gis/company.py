@@ -306,6 +306,7 @@ class Company:
 
             self._reviews.extend(data['reviews'])
             url = data['meta'].get('next_link')
+            logger.debug(f'next_link: {url}')
             time.sleep(SLEEPTIME)
 
             if len(self._reviews) >= LOAD_NREVIEWS:
