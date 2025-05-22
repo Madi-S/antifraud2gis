@@ -520,9 +520,10 @@ class Company:
         return any(sub in title for sub in culture_titles)
 
     def report_reliable(self, report: dict):
-        for detection in report['score']['detections']:
-            if detection.startswith('risk_users') and self.culture():
-                return False
+        if 'detections' in report['score']:
+            for detection in report['score']['detections']:
+                if detection.startswith('risk_users') and self.culture():
+                    return False
                 
         return True
 
