@@ -129,8 +129,15 @@ def dump_report(object_id: str):
     except FileNotFoundError:
         raise AFReportNotReady(f"Report not ready for {object_id}")
 
+
+
+    table_title = f"{c.get_title()} ({c.address}) {c.object_id}"
+
+    if not c.report_reliable(report=report):
+        table_title += " [NOT RELIABLE]"
+
     console = Console()
-    table = Table(show_header=True, header_style="bold magenta", title=f"{c.get_title()} ({c.address}) {c.object_id}")
+    table = Table(show_header=True, header_style="bold magenta", title=table_title)
     table.add_column("T", style='red')
     table.add_column("Company name")
     table.add_column("Town")

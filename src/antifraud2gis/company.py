@@ -513,6 +513,19 @@ class Company:
         if self.basic_path.exists():
             self.basic_path.unlink()
 
+
+    def culture(self):
+        culture_titles = ['храм', 'музей']
+        title = self.get_title().lower()
+        return any(sub in title for sub in culture_titles)
+
+    def report_reliable(self, report: dict):
+        for detection in report['score']['detections']:
+            if detection.startswith('risk_users') and self.culture():
+                return False
+                
+        return True
+
 class CompanyList():
     path = None
     def __init__(self, path=None):
@@ -632,4 +645,4 @@ def company_match(c: Company, oid: str, name: str = None, town: str = None, dete
         
     # all filters matched
     return True
-            
+

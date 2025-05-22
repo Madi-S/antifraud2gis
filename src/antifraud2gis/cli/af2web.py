@@ -126,6 +126,9 @@ async def report(request: Request, oid: str):
             # print_json(data=report)
             # print(report['relations'][0])
 
+
+            report_reliable = c.report_reliable(report=report)
+
             for rel in report['relations']:
                 rep_path = settings.company_storage / (rel['oid'] + '-report.json.gz')
                 if rep_path.exists():
@@ -142,15 +145,12 @@ async def report(request: Request, oid: str):
             return render(
                 request,
                 "report.html", {
-                    "request": request,
-                    "settings": settings,
                     "c": c,
                     "oid": c.object_id,
                     "title": c.title,
                     "score": report['score'],
                     "relations": report['relations'],
-                    "trusted": last_trusted,
-                    "untrusted": last_untrusted
+                    "report_reliable": report_reliable
                     }
             )
 
