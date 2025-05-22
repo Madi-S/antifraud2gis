@@ -366,7 +366,7 @@ class User:
 
 
     def __repr__(self):
-        return f'User({self.name} (rev: {len(self._reviews) if self._reviews else "not loaded"}) {self.url})'
+        return f'User({self.name} {self.url} rev: {len(self._reviews) if self._reviews else "not loaded"})'
 
 
 
