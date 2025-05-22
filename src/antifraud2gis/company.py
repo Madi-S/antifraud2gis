@@ -4,6 +4,7 @@ import time
 import fnmatch
 import sys
 import gzip
+import zlib
 import traceback
 import numpy as np
 import lmdb
@@ -190,7 +191,7 @@ class Company:
                     # print(f"Load company reviews from {self.reviews_path} mtime: {int(self.reviews_path.stat().st_mtime)} sz: {self.reviews_path.stat().st_size}")
                     self._reviews = json.load(f)
                     self.count_rate()
-            except gzip.BadGzipFile:
+            except (gzip.BadGzipFile, OSError, zlib.error):
                 logger.error(f"Bad gzip file! {self.reviews_path}")
                 sys.exit(1)
         else:
@@ -489,7 +490,8 @@ class Company:
     @staticmethod
     def resolve_oid(object_id: str):
         """ set self.title/address from user's reviews """
-        env = lmdb.open(settings.lmdb_storage.as_posix(), map_size=LMDB_MAP_SIZE, readonly=True)
+        # env = lmdb.open(settings.lmdb_storage.as_posix(), map_size=LMDB_MAP_SIZE, readonly=True)
+        env = lmdb.open(settings.lmdb_storage.as_posix(), readonly=True)
 
         with env.begin() as txn:
             jdata = txn.get(b"object:" + object_id.encode())
