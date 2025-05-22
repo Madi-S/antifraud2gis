@@ -264,6 +264,9 @@ class Company:
 
         page=0
         while url:
+            if ':8080' in url:
+                logger.debug('strip :8080 from {url}')
+                url = url.replace(':8080', '')
             logger.debug(f".. load company reviews p{page} for {self}: {url}")
             r = None
             while r is None:
