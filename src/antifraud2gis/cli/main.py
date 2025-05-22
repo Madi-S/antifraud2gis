@@ -149,7 +149,8 @@ def main():
         except IndexError:
             needle=''
 
-        res = dbsearch('', detection=args.detection, addr=args.town, limit=500)
+
+        res = dbsearch(needle, detection=args.detection, addr=args.town, limit=500)
         for rec in res:
             print(rec)
         if args.fmt == 'full':

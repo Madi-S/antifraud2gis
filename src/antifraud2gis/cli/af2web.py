@@ -17,6 +17,7 @@ import redis
 import markdown
 import frontmatter
 import requests
+import argparse
 
 from dramatiq import get_broker
 
@@ -30,6 +31,7 @@ from ..const import REDIS_TASK_QUEUE_NAME, REDIS_TRUSTED_LIST, REDIS_UNTRUSTED_L
 # from ..search import search
 from ..companydb import dbsearch
 from ..compare import compare
+from ..logger import loginit, testlogger
 
 app = FastAPI()
 
@@ -50,7 +52,6 @@ class ReportRequest(BaseModel):
 
 
 def render(request, template_name, context: dict):
-    # Добавляем общие данные
 
     last_trusted = [json.loads(item) for item in r.lrange(REDIS_TRUSTED_LIST, 0, -1)]
     last_untrusted = [json.loads(item) for item in r.lrange(REDIS_UNTRUSTED_LIST, 0, -1)]
@@ -378,9 +379,18 @@ async def catch_all(request: Request, full_path: str):
     else:
         return RedirectResponse(app.url_path_for("home"))
 
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-v", "--verbose", default=False, action='store_true')
+    return parser.parse_args()
+
 
 def main():
     global templates
+
+    args = get_args()
+    loginit("DEBUG" if args.verbose else "INFO")
+    testlogger()
     import uvicorn
     auto_reload = bool(os.getenv("AUTO_RELOAD", False))
     print("AUTO_RELOAD:", auto_reload)

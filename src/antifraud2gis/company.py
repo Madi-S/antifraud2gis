@@ -264,7 +264,7 @@ class Company:
 
         page=0
         while url:
-            # logger.debug(f".. load reviews p{page} for {self}: {url}")
+            logger.debug(f".. load company reviews p{page} for {self}: {url}")
             r = None
             while r is None:
 

@@ -216,7 +216,7 @@ class User:
         _reviews = list()
 
         while True:
-            # logger.debug(f"Loading page {page} for user {self}")
+            logger.debug(f"Loading user reviews p{page} for user {self} from {url}")
             time.sleep(SLEEPTIME)
             r = session.get(url)
             if r.status_code == 403:
