@@ -515,6 +515,14 @@ class Company:
 
 
     def culture(self):
+
+        whitelisted = [
+            '70000001063840471' # Дом книги, СПб
+        ]
+
+        if self.object_id in whitelisted:
+            return True
+
         culture_titles = ['храм', 'музей']
         title = self.get_title().lower()
         return any(sub in title for sub in culture_titles)
@@ -533,6 +541,8 @@ class CompanyList():
         self.path = path or settings.company_storage
     
     def __getitem__(self, index):
+
+        assert(self.path)
 
         basicpath = self.path / f'{index}-basic.json.gz'
         if basicpath.exists():
