@@ -523,7 +523,7 @@ class Company:
         if self.object_id in whitelisted:
             return True
 
-        culture_titles = ['храм', 'музей']
+        culture_titles = ['храм', 'музей', 'парк']
         title = self.get_title().lower()
         return any(sub in title for sub in culture_titles)
 
