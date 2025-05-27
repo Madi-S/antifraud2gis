@@ -150,7 +150,7 @@ def main():
             needle=''
 
 
-        res = dbsearch(needle, detection=args.detection, addr=args.town, limit=500)
+        res = dbsearch(needle, detection=args.detection, addr=args.town, limit=args.limit)
         for rec in res:
             print(rec)
         if args.fmt == 'full':
