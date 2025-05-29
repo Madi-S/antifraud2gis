@@ -69,11 +69,14 @@ class Settings():
         # Other system parameters
         self.proxy = os.getenv('HTTPS_PROXY', None)
 
+
+
         # web UI
         self.turnstile_sitekey = os.getenv('TURNSTILE_SITEKEY', None)
         self.turnstile_secret = os.getenv('TURNSTILE_SECRET', None)
         self.gtag = os.getenv('GTAG', None)
-
+        self.motd = os.getenv('MOTD', None)
+    
         # Debugging
         self.skip_oids = list(filter(None, os.getenv('SKIP_OIDS', '').split(' ')))
         self.debug_uids = list(filter(None, os.getenv('DEBUG_UIDS', '').split(' ')))

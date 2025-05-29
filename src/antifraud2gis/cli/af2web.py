@@ -68,10 +68,17 @@ def render(request, template_name, context: dict):
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
+    # index page
+
+    if settings.motd and os.path.exists(settings.motd):
+        motd_html = markdown.markdown(open(settings.motd).read())
+    else:
+        motd_html = None
 
     return render(request, "index.html",
         {
             "request": request,
+            "motd": motd_html
         } 
     )
 
