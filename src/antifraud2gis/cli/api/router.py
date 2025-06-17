@@ -31,8 +31,8 @@ async def report(request: Request, oid: str):
         with gzip.open(c.report_path, "rt") as fh:
             report = json.load(fh)
     except FileNotFoundError:
-        r['status'] = 'MISS'
-        r['url'] = request.app.url_path_for("miss", oid=oid)
+        r['status'] = 'MISS'        
+        r['url'] = str(request.url_for("miss", oid=oid))
         return r
 
     r['status'] = 'OK'
