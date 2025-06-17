@@ -33,7 +33,12 @@ from ..companydb import dbsearch
 from ..compare import compare
 from ..logger import loginit, testlogger
 
+from .api import router as api_router
+
+
 app = FastAPI()
+app.include_router(api_router.router)
+
 
 static_path = importlib.resources.files("antifraud2gis") / "static"
 templates_path = importlib.resources.files("antifraud2gis") / "templates"
