@@ -124,7 +124,7 @@ async def route_compare(request: Request, oida: str, oidb: str):
     return PlainTextResponse(content=data)
 
 
-@app.get("/report/{oid}", response_class=HTMLResponse)
+@app.get("/report/{oid}", name="report", response_class=HTMLResponse)
 async def report(request: Request, oid: str):
     try:
         c = Company(oid)
@@ -387,7 +387,9 @@ async def catch_all(request: Request, full_path: str):
     if m:
         object_id = m.group(1)
         print(f"Extracted {object_id} from {full_path}")
-        return RedirectResponse(app.url_path_for("report", oid=object_id))
+        url = RedirectResponse(app.url_path_for("report", oid=object_id))
+        print("Redirect to:", url)
+        return url
     else:
         return RedirectResponse(app.url_path_for("home"))
 
