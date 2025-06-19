@@ -15,7 +15,7 @@ async def ping():
     return {"message": "pong"}
 
 @router.get("/report/2gis/{oid}", response_class=JSONResponse)
-async def report(request: Request, oid: str):
+async def api_report(request: Request, oid: str):
     r = dict()
     r['status'] = None
     r['trusted'] = None
