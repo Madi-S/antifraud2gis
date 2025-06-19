@@ -387,9 +387,9 @@ async def catch_all(request: Request, full_path: str):
     if m:
         object_id = m.group(1)
         print(f"Extracted {object_id} from {full_path}")
-        url = RedirectResponse(app.url_path_for("report", oid=object_id))
-        print("Redirect to:", url)
-        return url
+        response = RedirectResponse(app.url_path_for("report", oid=object_id))
+        print("Redirect to:", {response.headers['Location']})
+        return response
     else:
         return RedirectResponse(app.url_path_for("home"))
 
