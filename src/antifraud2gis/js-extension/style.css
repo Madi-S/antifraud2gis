@@ -1,0 +1,161 @@
+#af2gis-checker {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(52, 152, 219, 0.3);
+    transition: all 0.2s ease;
+}
+
+#af2gis-checker:hover {
+    background-color: #2980b9;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+}
+
+#af2gis-results {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    background-color: #ffffff;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    min-width: 200px;
+    max-width: 300px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.af2gis-loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.af2gis-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.af2gis-result-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.af2gis-result-icon {
+    font-size: 16px;
+}
+
+.af2gis-result-text {
+    font-weight: bold;
+}
+
+.af2gis-company-info {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.af2gis-button-row {
+    display: flex;
+    gap: 6px;
+}
+
+.af2gis-btn {
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 6px 12px;
+    transition: all 0.2s ease;
+}
+
+.af2gis-btn-primary {
+    background-color: #3498db;
+    color: white;
+    flex: 1;
+}
+
+.af2gis-btn-primary:hover {
+    background-color: #2980b9;
+}
+
+.af2gis-btn-secondary {
+    background-color: #95a5a6;
+    color: white;
+    padding: 6px 8px;
+}
+
+.af2gis-btn-secondary:hover {
+    background-color: #7f8c8d;
+}
+
+.af2gis-btn-close {
+    background-color: #95a5a6;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+}
+
+.af2gis-btn-close:hover {
+    background-color: #7f8c8d;
+}
+
+.af2gis-trusted {
+    color: #27ae60;
+}
+
+.af2gis-untrusted {
+    color: #e74c3c;
+}
+
+.af2gis-unknown {
+    color: #f39c12;
+}
+
+.af2gis-error {
+    color: #e74c3c;
+}
+
+.af2gis-no-company {
+    color: #95a5a6;
+}
+
+@media (max-width: 768px) {
+    #af2gis-checker,
+    #af2gis-results {
+        top: 10px;
+        right: 10px;
+        min-width: 180px;
+        font-size: 13px;
+        padding: 10px;
+    }
+}

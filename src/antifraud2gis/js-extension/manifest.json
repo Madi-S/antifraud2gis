@@ -1,0 +1,43 @@
+{
+    "manifest_version": 3,
+    "name": "AF2GIS Проверка Отзывов",
+    "version": "1.0",
+    "description": "Проверяет надежность отзывов компаний 2GIS с помощью API AF2GIS",
+    "permissions": ["activeTab"],
+    "host_permissions": ["https://af2gis.ru/*"],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "*://*.2gis.ru/*",
+                "*://*.2gis.com/*",
+                "*://*.2gis.kz/*",
+                "*://*.2gis.kg/*"
+            ],
+            "js": ["content.js"],
+            "css": ["style.css"]
+        }
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": ["templates/*.html"],
+            "matches": [
+                "*://*.2gis.ru/*",
+                "*://*.2gis.kz/*",
+                "*://*.2gis.kg/*",
+                "*://*.2gis.by/*",
+                "*://*.2gis.uz/*",
+                "*://*.2gis.am/*",
+                "*://*.2gis.az/*",
+                "*://*.2gis.ae/*",
+                "*://*.2gis.ge/*",
+                "*://*.2gis.cy/*"
+            ]
+        }
+    ],
+    "icons": {
+        "48": "logo.png"
+    }
+}
